@@ -11,6 +11,16 @@ import AdminDashboard from "./pages/admin/Dashboard";
 import DestinationsList from "./pages/admin/Destinations";
 import DestinationForm from "./pages/admin/DestinationForm";
 
+// New pages
+import Destinations from "./pages/Destinations";
+import DestinationDetail from "./pages/DestinationDetail";
+import Promotions from "./pages/Promotions";
+import PromotionDetail from "./pages/PromotionDetail";
+import Help from "./pages/Help";
+import Login from "./pages/auth/Login";
+import Register from "./pages/auth/Register";
+import Profile from "./pages/auth/Profile";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -21,6 +31,18 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
+          
+          {/* Auth Routes */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/profile" element={<Profile />} />
+          
+          {/* Website Routes */}
+          <Route path="/destinasi" element={<Destinations />} />
+          <Route path="/destinasi/:slug" element={<DestinationDetail />} />
+          <Route path="/promo" element={<Promotions />} />
+          <Route path="/promo/:slug" element={<PromotionDetail />} />
+          <Route path="/bantuan" element={<Help />} />
           
           {/* Admin Routes */}
           <Route path="/admin" element={<AdminLayout />}>
