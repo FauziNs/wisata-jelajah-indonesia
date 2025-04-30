@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
@@ -108,7 +108,9 @@ const DestinationDetail = () => {
         <div className="container-custom py-20 text-center">
           <h1 className="text-3xl font-bold mb-4">Destinasi Tidak Ditemukan</h1>
           <p className="mb-8">Maaf, destinasi yang Anda cari tidak ditemukan.</p>
-          <Button href="/destinasi">Kembali ke Daftar Destinasi</Button>
+          <Link to="/destinasi">
+            <Button>Kembali ke Daftar Destinasi</Button>
+          </Link>
         </div>
         <Footer />
       </div>

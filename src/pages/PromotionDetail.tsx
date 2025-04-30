@@ -68,7 +68,9 @@ const PromotionDetail = () => {
         <div className="container-custom py-20 text-center">
           <h1 className="text-3xl font-bold mb-4">Promosi Tidak Ditemukan</h1>
           <p className="mb-8">Maaf, promosi yang Anda cari tidak ditemukan.</p>
-          <Button href="/promo">Kembali ke Daftar Promosi</Button>
+          <Link to="/promo">
+            <Button>Kembali ke Daftar Promosi</Button>
+          </Link>
         </div>
         <Footer />
       </div>

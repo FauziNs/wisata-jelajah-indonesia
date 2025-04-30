@@ -89,23 +89,17 @@ const Navbar = () => {
             </div>
           ) : (
             <>
-              <Button 
-                variant="outline" 
-                className="flex items-center gap-2"
-                onClick={toggleLoginState} // In a real app, this would navigate to the login page
-                as={Link}
-                to="/login"
-              >
-                <User className="h-4 w-4" />
-                <span>Masuk</span>
-              </Button>
-              <Button 
-                className="bg-primary hover:bg-primary/90"
-                as={Link}
-                to="/register"
-              >
-                Daftar
-              </Button>
+              <Link to="/login">
+                <Button variant="outline" className="flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  <span>Masuk</span>
+                </Button>
+              </Link>
+              <Link to="/register">
+                <Button className="bg-primary hover:bg-primary/90">
+                  Daftar
+                </Button>
+              </Link>
             </>
           )}
         </div>
