@@ -235,6 +235,36 @@ export type Database = {
           },
         ]
       }
+      profiles: {
+        Row: {
+          alamat: string | null
+          created_at: string
+          full_name: string
+          id: string
+          phone_number: string | null
+          profile_picture_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          alamat?: string | null
+          created_at?: string
+          full_name: string
+          id: string
+          phone_number?: string | null
+          profile_picture_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          alamat?: string | null
+          created_at?: string
+          full_name?: string
+          id?: string
+          phone_number?: string | null
+          profile_picture_url?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       promotions: {
         Row: {
           category: string | null

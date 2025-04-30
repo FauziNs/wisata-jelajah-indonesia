@@ -8,6 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Eye, EyeOff, Mail, Lock, Phone, User, Upload } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { signUp, uploadProfileImage, updateProfile } from '@/integrations/supabase/auth';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -145,21 +147,64 @@ const Register = () => {
     setIsLoading(true);
 
     try {
-      // In a real app, this would be an API call to your registration service
-      console.log('Registering with:', formData);
-      console.log('Profile image:', profileImage);
+      // Register the user with Supabase
+      const { user, error, session } = await signUp({
+        email: formData.email,
+        password: formData.password,
+        fullName: formData.fullName,
+        phone: formData.phone,
+        address: formData.address
+      });
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      if (error) {
+        if (error.message.includes('already registered')) {
+          toast({
+            title: "Email sudah terdaftar",
+            description: "Silakan gunakan email lain atau lakukan login",
+            variant: "destructive"
+          });
+        } else {
+          toast({
+            title: "Registrasi gagal",
+            description: error.message,
+            variant: "destructive"
+          });
+        }
+        return;
+      }
+      
+      // If we have a profile image, upload it
+      if (user && profileImage) {
+        const { url: imageUrl, error: uploadError } = await uploadProfileImage(user.id, profileImage);
+        
+        if (uploadError) {
+          toast({
+            title: "Gagal mengunggah foto profil",
+            description: "Profil Anda telah dibuat, tetapi foto profil gagal diunggah",
+            variant: "destructive"
+          });
+        } else if (imageUrl) {
+          // Update the user's profile with the image URL
+          await updateProfile(user.id, {
+            profile_picture_url: imageUrl
+          });
+        }
+      }
       
       // Show success message
       toast({
         title: "Registrasi berhasil!",
-        description: "Silakan periksa email Anda untuk verifikasi akun."
+        description: session 
+          ? "Akun Anda telah dibuat dan Anda telah masuk."
+          : "Silakan periksa email Anda untuk verifikasi akun."
       });
       
-      // Navigate to login page after successful registration
-      navigate('/login');
+      // Navigate to login page or home page based on session status
+      if (session) {
+        navigate('/'); // User is already logged in
+      } else {
+        navigate('/login'); // User needs to verify email or log in
+      }
     } catch (error) {
       console.error('Registration error:', error);
       toast({
@@ -389,27 +434,26 @@ const Register = () => {
                 {/* Terms and Conditions */}
                 <div>
                   <div className="flex items-start">
-                    <input
-                      type="checkbox"
-                      id="agreeTerms"
-                      name="agreeTerms"
-                      className="h-4 w-4 mt-1 rounded border-gray-300 text-primary focus:ring-primary"
-                      checked={formData.agreeTerms}
-                      onChange={(e) => {
-                        setFormData(prev => ({
-                          ...prev,
-                          agreeTerms: e.target.checked
-                        }));
-                        
-                        if (errors.agreeTerms) {
-                          setErrors(prev => {
-                            const newErrors = {...prev};
-                            delete newErrors.agreeTerms;
-                            return newErrors;
-                          });
-                        }
-                      }}
-                    />
+                    <div className="flex items-center h-5 mt-1">
+                      <Checkbox
+                        id="agreeTerms"
+                        checked={formData.agreeTerms}
+                        onCheckedChange={(checked) => {
+                          setFormData(prev => ({
+                            ...prev,
+                            agreeTerms: checked === true
+                          }));
+                          
+                          if (errors.agreeTerms) {
+                            setErrors(prev => {
+                              const newErrors = {...prev};
+                              delete newErrors.agreeTerms;
+                              return newErrors;
+                            });
+                          }
+                        }}
+                      />
+                    </div>
                     <label htmlFor="agreeTerms" className="ml-2 text-sm text-gray-600">
                       Saya menyetujui <Link to="/terms" className="text-primary hover:underline">Syarat dan Ketentuan</Link> serta <Link to="/privacy" className="text-primary hover:underline">Kebijakan Privasi</Link>
                     </label>

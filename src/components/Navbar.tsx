@@ -1,20 +1,23 @@
 
-import { useState } from 'react';
-import { NavLink, Link } from 'react-router-dom';
-import { Menu, X, User, Search } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { NavLink, Link, useNavigate } from 'react-router-dom';
+import { Menu, X, User, Search, LogOut } from 'lucide-react';
 import { Button } from "@/components/ui/button";
+import { useAuth } from '@/context/AuthContext';
+import { signOut } from '@/integrations/supabase/auth';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false); // This would come from your auth context in a real app
+  const { user, isLoading, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   
   const toggleMenu = () => {
     setIsOpen(!isOpen);
   };
 
-  // Toggle this for testing login/logout state
-  const toggleLoginState = () => {
-    setIsLoggedIn(!isLoggedIn);
+  const handleLogout = async () => {
+    await signOut();
+    // Auth state changes will be handled by the AuthContext
   };
 
   return (
@@ -49,12 +52,11 @@ const Navbar = () => {
             <Search className="h-5 w-5 text-gray-600" />
           </Button>
           
-          {isLoggedIn ? (
+          {isAuthenticated ? (
             <div className="relative group">
               <Button 
                 variant="outline" 
                 className="flex items-center gap-2"
-                onClick={() => toggleLoginState()} // In a real app, this would open a dropdown menu
               >
                 <User className="h-4 w-4" />
                 <span>Akun Saya</span>
@@ -80,7 +82,7 @@ const Navbar = () => {
                 </Link>
                 <div className="border-t border-gray-100 my-1"></div>
                 <button 
-                  onClick={toggleLoginState}
+                  onClick={handleLogout}
                   className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                 >
                   Logout
@@ -132,7 +134,7 @@ const Navbar = () => {
               Bantuan
             </NavLink>
             <div className="pt-3 border-t border-gray-200">
-              {isLoggedIn ? (
+              {isAuthenticated ? (
                 <>
                   <Link to="/profile" className="block py-2 font-medium text-gray-700 hover:text-primary" onClick={toggleMenu}>
                     Profil Saya
@@ -145,12 +147,15 @@ const Navbar = () => {
                   </Link>
                   <button 
                     onClick={() => {
-                      toggleLoginState();
+                      handleLogout();
                       toggleMenu();
                     }}
                     className="block w-full text-left py-2 font-medium text-gray-700 hover:text-primary"
                   >
-                    Logout
+                    <div className="flex items-center">
+                      <LogOut className="h-4 w-4 mr-2" />
+                      Logout
+                    </div>
                   </button>
                 </>
               ) : (

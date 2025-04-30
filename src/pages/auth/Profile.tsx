@@ -1,5 +1,6 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
@@ -22,19 +23,29 @@ import {
   Upload
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { updateProfile, uploadProfileImage, signOut } from '@/integrations/supabase/auth';
+
+type ProfileData = {
+  id: string;
+  full_name: string;
+  email: string;
+  phone_number: string | null;
+  alamat: string | null;
+  profile_picture_url: string | null;
+};
 
 const Profile = () => {
   const { toast } = useToast();
-  const [isEditing, setIsEditing] = useState(false);
-  const [profileData, setProfileData] = useState({
-    fullName: 'Andi Wijaya',
-    email: 'andi.wijaya@email.com',
-    phone: '+62 812 3456 7890',
-    address: 'Jl. Sudirman No. 123, Jakarta Pusat, DKI Jakarta',
-    profileImage: 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80'
-  });
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const navigate = useNavigate();
   
-  const [tempProfileData, setTempProfileData] = useState(profileData);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [profileData, setProfileData] = useState<ProfileData | null>(null);
+  const [tempProfileData, setTempProfileData] = useState<ProfileData | null>(null);
+  
   const [newProfileImage, setNewProfileImage] = useState<File | null>(null);
   const [profileImagePreview, setProfileImagePreview] = useState<string | null>(null);
   
@@ -44,6 +55,7 @@ const Profile = () => {
     confirmPassword: ''
   });
   
+  // Mock data for bookings and saved destinations - to be replaced with real data later
   const bookingHistory = [
     {
       id: 'TRX1234567',
@@ -85,12 +97,75 @@ const Profile = () => {
     }
   ];
 
+  // Fetch user profile data
+  useEffect(() => {
+    const fetchProfileData = async () => {
+      if (!user) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+        
+        if (error) {
+          throw error;
+        }
+        
+        const profileWithEmail = {
+          ...data,
+          email: user.email || '',
+        };
+        
+        setProfileData(profileWithEmail);
+        setTempProfileData(profileWithEmail);
+        
+      } catch (error) {
+        console.error('Error fetching profile:', error);
+        toast({
+          title: "Error",
+          description: "Gagal mengambil data profil",
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    if (user) {
+      fetchProfileData();
+    } else if (!authLoading) {
+      setIsLoading(false);
+    }
+  }, [user, authLoading, toast]);
+  
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      navigate('/login');
+      toast({
+        title: "Akses ditolak",
+        description: "Silakan login untuk mengakses halaman profil",
+        variant: "destructive"
+      });
+    }
+  }, [isAuthenticated, authLoading, navigate, toast]);
+
   const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setTempProfileData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    
+    if (tempProfileData) {
+      setTempProfileData(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          [name === 'fullName' ? 'full_name' : 
+           name === 'phone' ? 'phone_number' : 
+           name === 'address' ? 'alamat' : name]: value
+        };
+      });
+    }
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -101,19 +176,59 @@ const Profile = () => {
     }
   };
 
-  const handleSaveProfile = () => {
-    setProfileData(tempProfileData);
-    if (profileImagePreview) {
-      setProfileData(prev => ({
-        ...prev,
-        profileImage: profileImagePreview
-      }));
+  const handleSaveProfile = async () => {
+    if (!user || !tempProfileData) return;
+    
+    setIsLoading(true);
+    
+    try {
+      // If there's a new profile image, upload it first
+      let newImageUrl = null;
+      if (newProfileImage) {
+        const { url, error: uploadError } = await uploadProfileImage(user.id, newProfileImage);
+        
+        if (uploadError) {
+          throw uploadError;
+        }
+        
+        newImageUrl = url;
+      }
+      
+      // Update profile data
+      const { error } = await updateProfile(user.id, {
+        full_name: tempProfileData.full_name,
+        phone_number: tempProfileData.phone_number || null,
+        alamat: tempProfileData.alamat || null,
+        ...(newImageUrl && { profile_picture_url: newImageUrl })
+      });
+      
+      if (error) {
+        throw error;
+      }
+      
+      // Update local state with the new data
+      setProfileData({
+        ...tempProfileData,
+        profile_picture_url: newImageUrl || tempProfileData.profile_picture_url
+      });
+      
+      setIsEditing(false);
+      toast({
+        title: "Profil berhasil diperbarui",
+        description: "Data profil Anda telah disimpan"
+      });
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast({
+        title: "Gagal memperbarui profil",
+        description: "Terjadi kesalahan saat menyimpan data",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+      setNewProfileImage(null);
+      setProfileImagePreview(null);
     }
-    setIsEditing(false);
-    toast({
-      title: "Profil berhasil diperbarui",
-      description: "Data profil Anda telah disimpan"
-    });
   };
 
   const handleCancelEdit = () => {
@@ -123,15 +238,7 @@ const Profile = () => {
     setIsEditing(false);
   };
   
-  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setPasswordData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-  
-  const handlePasswordSubmit = (e: React.FormEvent) => {
+  const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Validate password
@@ -144,21 +251,73 @@ const Profile = () => {
       return;
     }
     
-    // In a real app, you would make an API call to update the password
-    console.log('Updating password:', passwordData);
-    
-    toast({
-      title: "Password berhasil diperbarui",
-      description: "Password Anda telah diperbarui"
-    });
-    
-    // Reset form
-    setPasswordData({
-      currentPassword: '',
-      newPassword: '',
-      confirmPassword: ''
-    });
+    // In a real app, you would update the password through Supabase Auth
+    try {
+      setIsLoading(true);
+      
+      // Here you would call the Supabase auth.updateUser method
+      const { error } = await supabase.auth.updateUser({
+        password: passwordData.newPassword
+      });
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Password berhasil diperbarui",
+        description: "Password Anda telah diperbarui"
+      });
+      
+      // Reset form
+      setPasswordData({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      });
+    } catch (error) {
+      console.error('Error updating password:', error);
+      toast({
+        title: "Gagal memperbarui password",
+        description: "Terjadi kesalahan saat menyimpan password",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
+  
+  const handleLogout = async () => {
+    await signOut();
+    // Redirection handled by AuthContext
+  };
+  
+  const handleDeleteAccount = async () => {
+    // In a real implementation, you would add confirmation and call Supabase to delete the user
+    try {
+      toast({
+        title: "Fitur belum tersedia",
+        description: "Hapus akun belum diimplementasikan pada tahap ini.",
+        variant: "destructive"
+      });
+    } catch (error) {
+      console.error('Error deleting account:', error);
+    }
+  };
+
+  // Show loading state
+  if (isLoading || !profileData) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center p-8">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+            <p className="mt-4 text-gray-600">Memuat profil...</p>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -170,14 +329,14 @@ const Profile = () => {
             <div className="relative">
               <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-md">
                 <img 
-                  src={profileData.profileImage} 
-                  alt={profileData.fullName} 
+                  src={profileData.profile_picture_url || 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80'} 
+                  alt={profileData.full_name} 
                   className="w-full h-full object-cover"
                 />
               </div>
             </div>
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold">{profileData.fullName}</h1>
+              <h1 className="text-2xl md:text-3xl font-bold">{profileData.full_name}</h1>
               <div className="flex items-center mt-2 text-gray-600">
                 <Mail className="h-4 w-4 mr-2" />
                 <span>{profileData.email}</span>
@@ -231,8 +390,8 @@ const Profile = () => {
                           <div className="relative mb-2">
                             <div className="w-24 h-24 rounded-full overflow-hidden border border-gray-200">
                               <img 
-                                src={profileImagePreview || profileData.profileImage} 
-                                alt={tempProfileData.fullName} 
+                                src={profileImagePreview || profileData.profile_picture_url || 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80'} 
+                                alt={tempProfileData?.full_name} 
                                 className="w-full h-full object-cover"
                               />
                             </div>
@@ -268,7 +427,7 @@ const Profile = () => {
                                 name="fullName"
                                 placeholder="Nama lengkap Anda"
                                 className="pl-10"
-                                value={tempProfileData.fullName}
+                                value={tempProfileData?.full_name || ''}
                                 onChange={handleProfileChange}
                               />
                             </div>
@@ -286,10 +445,13 @@ const Profile = () => {
                                 type="email"
                                 placeholder="email@example.com"
                                 className="pl-10"
-                                value={tempProfileData.email}
-                                onChange={handleProfileChange}
+                                value={tempProfileData?.email || ''}
+                                disabled
                               />
                             </div>
+                            <p className="text-xs text-gray-500">
+                              Email tidak dapat diubah
+                            </p>
                           </div>
                           
                           <div className="space-y-2">
@@ -304,7 +466,7 @@ const Profile = () => {
                                 type="tel"
                                 placeholder="+62 812 3456 7890"
                                 className="pl-10"
-                                value={tempProfileData.phone}
+                                value={tempProfileData?.phone_number || ''}
                                 onChange={handleProfileChange}
                               />
                             </div>
@@ -321,7 +483,7 @@ const Profile = () => {
                                 name="address"
                                 placeholder="Masukkan alamat Anda"
                                 className="w-full min-h-[80px] rounded-md border border-input bg-background px-3 py-2 pl-10 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                                value={tempProfileData.address}
+                                value={tempProfileData?.alamat || ''}
                                 onChange={handleProfileChange}
                               ></textarea>
                             </div>
@@ -331,8 +493,8 @@ const Profile = () => {
                             <Button variant="outline" onClick={handleCancelEdit}>
                               Batal
                             </Button>
-                            <Button onClick={handleSaveProfile}>
-                              Simpan Perubahan
+                            <Button onClick={handleSaveProfile} disabled={isLoading}>
+                              {isLoading ? 'Menyimpan...' : 'Simpan Perubahan'}
                             </Button>
                           </div>
                         </div>
@@ -344,7 +506,7 @@ const Profile = () => {
                             <User className="inline-block h-4 w-4 mr-2" />
                             Nama
                           </div>
-                          <div className="flex-1 font-medium">{profileData.fullName}</div>
+                          <div className="flex-1 font-medium">{profileData.full_name}</div>
                         </div>
                         
                         <div className="flex border-b pb-4">
@@ -360,7 +522,7 @@ const Profile = () => {
                             <Phone className="inline-block h-4 w-4 mr-2" />
                             Telepon
                           </div>
-                          <div className="flex-1 font-medium">{profileData.phone}</div>
+                          <div className="flex-1 font-medium">{profileData.phone_number || '-'}</div>
                         </div>
                         
                         <div className="flex">
@@ -368,7 +530,7 @@ const Profile = () => {
                             <MapPin className="inline-block h-4 w-4 mr-2" />
                             Alamat
                           </div>
-                          <div className="flex-1 font-medium">{profileData.address}</div>
+                          <div className="flex-1 font-medium">{profileData.alamat || '-'}</div>
                         </div>
                       </div>
                     )}
@@ -378,7 +540,7 @@ const Profile = () => {
                 <Card className="mt-8">
                   <CardContent className="p-6">
                     <h2 className="text-xl font-semibold mb-6">Ubah Password</h2>
-                    <form onSubmit={handlePasswordSubmit} className="space-y-4">
+                    <form onSubmit={handlePasswordChange} className="space-y-4">
                       <div className="space-y-2">
                         <label htmlFor="currentPassword" className="text-sm font-medium">
                           Password Saat Ini
@@ -392,7 +554,7 @@ const Profile = () => {
                             placeholder="••••••••"
                             className="pl-10"
                             value={passwordData.currentPassword}
-                            onChange={handlePasswordChange}
+                            onChange={(e) => setPasswordData(prev => ({...prev, currentPassword: e.target.value}))}
                             required
                           />
                         </div>
@@ -411,7 +573,7 @@ const Profile = () => {
                             placeholder="••••••••"
                             className="pl-10"
                             value={passwordData.newPassword}
-                            onChange={handlePasswordChange}
+                            onChange={(e) => setPasswordData(prev => ({...prev, newPassword: e.target.value}))}
                             required
                           />
                         </div>
@@ -430,14 +592,14 @@ const Profile = () => {
                             placeholder="••••••••"
                             className="pl-10"
                             value={passwordData.confirmPassword}
-                            onChange={handlePasswordChange}
+                            onChange={(e) => setPasswordData(prev => ({...prev, confirmPassword: e.target.value}))}
                             required
                           />
                         </div>
                       </div>
                       
-                      <Button type="submit" className="w-full">
-                        Simpan Password Baru
+                      <Button type="submit" className="w-full" disabled={isLoading}>
+                        {isLoading ? 'Memproses...' : 'Simpan Password Baru'}
                       </Button>
                     </form>
                   </CardContent>
@@ -448,7 +610,11 @@ const Profile = () => {
                 <Card>
                   <CardContent className="p-6 space-y-6">
                     <div className="flex items-center gap-3">
-                      <Button variant="outline" className="w-full flex items-center gap-2">
+                      <Button 
+                        variant="outline" 
+                        className="w-full flex items-center gap-2"
+                        onClick={handleLogout}
+                      >
                         <LogOut className="h-4 w-4" />
                         Logout
                       </Button>
@@ -459,6 +625,7 @@ const Profile = () => {
                       <Button 
                         variant="outline" 
                         className="w-full border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700 flex items-center gap-2"
+                        onClick={handleDeleteAccount}
                       >
                         <Trash className="h-4 w-4" />
                         Hapus Akun
