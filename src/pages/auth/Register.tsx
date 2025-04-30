@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
@@ -8,8 +7,9 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Eye, EyeOff, Mail, Lock, Phone, User, Upload } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { signUp, uploadProfileImage, updateProfile } from '@/integrations/supabase/auth';
+import { signUp, uploadProfileImage, updateProfile, createUserProfile } from '@/integrations/supabase/auth';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -27,6 +27,7 @@ const Register = () => {
   const [profileImagePreview, setProfileImagePreview] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [debugInfo, setDebugInfo] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -145,8 +146,16 @@ const Register = () => {
     }
     
     setIsLoading(true);
+    setDebugInfo(null);
 
     try {
+      console.log('Starting registration with data:', {
+        email: formData.email,
+        fullName: formData.fullName,
+        phone: formData.phone,
+        address: formData.address
+      });
+      
       // Register the user with Supabase
       const { user, error, session } = await signUp({
         email: formData.email,
@@ -157,6 +166,9 @@ const Register = () => {
       });
       
       if (error) {
+        setDebugInfo(`Registration error: ${error.message}`);
+        console.error('Registration error details:', error);
+        
         if (error.message.includes('already registered')) {
           toast({
             title: "Email sudah terdaftar",
@@ -173,6 +185,27 @@ const Register = () => {
         return;
       }
       
+      // Output debug info about the created user
+      console.log('User created successfully:', user);
+      setDebugInfo(`User created with ID: ${user?.id}. Session: ${session ? 'Active' : 'Not active'}`);
+      
+      // Ensure the profile is created (as a fallback if the trigger doesn't work)
+      if (user) {
+        // Check if the profile was automatically created by the trigger
+        const manualProfileResult = await createUserProfile(user.id, {
+          full_name: formData.fullName,
+          phone_number: formData.phone,
+          alamat: formData.address
+        });
+        
+        if (manualProfileResult.error) {
+          console.log('Manual profile creation attempted but failed (likely because profile already exists from trigger):', manualProfileResult.error);
+          setDebugInfo(prevDebug => `${prevDebug}\nProfile creation: ${manualProfileResult.error ? 'Error (might be ok if already exists)' : 'Success'}`);
+        } else {
+          console.log('Manual profile creation succeeded (or profile already existed)');
+        }
+      }
+      
       // If we have a profile image, upload it
       if (user && profileImage) {
         const { url: imageUrl, error: uploadError } = await uploadProfileImage(user.id, profileImage);
@@ -183,11 +216,13 @@ const Register = () => {
             description: "Profil Anda telah dibuat, tetapi foto profil gagal diunggah",
             variant: "destructive"
           });
+          setDebugInfo(prevDebug => `${prevDebug}\nImage upload error: ${uploadError.message}`);
         } else if (imageUrl) {
           // Update the user's profile with the image URL
           await updateProfile(user.id, {
             profile_picture_url: imageUrl
           });
+          setDebugInfo(prevDebug => `${prevDebug}\nProfile image uploaded: ${imageUrl}`);
         }
       }
       
@@ -206,7 +241,9 @@ const Register = () => {
         navigate('/login'); // User needs to verify email or log in
       }
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       console.error('Registration error:', error);
+      setDebugInfo(`Unexpected error: ${errorMessage}`);
       toast({
         title: "Registrasi gagal!",
         description: "Terjadi kesalahan saat mendaftar. Silakan coba lagi.",
@@ -232,6 +269,15 @@ const Register = () => {
             </CardHeader>
             
             <CardContent>
+              {debugInfo && (
+                <Alert className="mb-4 bg-yellow-50">
+                  <AlertTitle>Debug Information</AlertTitle>
+                  <AlertDescription className="whitespace-pre-wrap text-xs">
+                    {debugInfo}
+                  </AlertDescription>
+                </Alert>
+              )}
+              
               <form onSubmit={handleSubmit} className="space-y-4">
                 {/* Profile Picture */}
                 <div className="flex flex-col items-center mb-6">
@@ -464,7 +510,17 @@ const Register = () => {
                 </div>
                 
                 <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? 'Memproses...' : 'Daftar'}
+                  {isLoading ? (
+                    <>
+                      <span className="mr-2">
+                        <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                      </span>
+                      Memproses...
+                    </>
+                  ) : 'Daftar'}
                 </Button>
               </form>
               

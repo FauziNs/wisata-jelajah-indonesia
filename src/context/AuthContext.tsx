@@ -4,12 +4,14 @@ import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { testSupabaseConnection } from '@/integrations/supabase/auth';
 
 interface AuthContextType {
   session: Session | null;
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  testConnection: () => Promise<{ success: boolean; message: string }>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -17,6 +19,7 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   isLoading: true,
   isAuthenticated: false,
+  testConnection: async () => ({ success: false, message: 'AuthContext not initialized' }),
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -29,10 +32,43 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Fetch the current session
+    console.log('Auth provider initializing...');
+    
+    // First set up the auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, currentSession) => {
+        console.log('Auth state changed:', event, currentSession?.user?.id);
+        setSession(currentSession);
+        setUser(currentSession?.user || null);
+        
+        if (event === 'SIGNED_IN') {
+          console.log('User signed in:', currentSession?.user?.id);
+          toast({
+            title: "Login berhasil",
+            description: "Selamat datang kembali!",
+          });
+        } else if (event === 'SIGNED_OUT') {
+          console.log('User signed out');
+          toast({
+            title: "Logout berhasil",
+            description: "Anda telah keluar dari akun",
+          });
+          navigate('/');
+        } else if (event === 'USER_UPDATED') {
+          console.log('User updated');
+        } else if (event === 'PASSWORD_RECOVERY') {
+          console.log('Password recovery event');
+          navigate('/reset-password');
+        }
+      }
+    );
+
+    // Then fetch the initial session
     const getInitialSession = async () => {
       try {
+        console.log('Fetching initial session...');
         const { data } = await supabase.auth.getSession();
+        console.log('Initial session:', data.session?.user?.id || 'No session');
         setSession(data.session);
         setUser(data.session?.user || null);
       } catch (error) {
@@ -49,37 +85,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     getInitialSession();
 
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, currentSession) => {
-        setSession(currentSession);
-        setUser(currentSession?.user || null);
-        
-        if (event === 'SIGNED_IN') {
-          toast({
-            title: "Login berhasil",
-            description: "Selamat datang kembali!",
-          });
-        } else if (event === 'SIGNED_OUT') {
-          toast({
-            title: "Logout berhasil",
-            description: "Anda telah keluar dari akun",
-          });
-          navigate('/');
-        }
-      }
-    );
-
     return () => {
+      console.log('Cleaning up auth subscription');
       subscription.unsubscribe();
     };
   }, [navigate, toast]);
+
+  const testConnection = async () => {
+    return await testSupabaseConnection();
+  };
 
   const value = {
     session,
     user,
     isLoading,
     isAuthenticated: !!session,
+    testConnection,
   };
 
   return (
