@@ -10,8 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { signUp, uploadProfileImage, updateProfile, createUserProfile } from '@/integrations/supabase/auth';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { supabase } from '@/integrations/supabase/client';
-import { testSupabaseConnection } from '@/integrations/supabase/client';
+import { supabase, testSupabaseConnection } from '@/integrations/supabase/client';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -163,8 +162,7 @@ const Register = () => {
       setDebugInfo(`Connection test: ${connectionTest.success ? 'Success' : 'Failed'}`);
       
       if (!connectionTest.success) {
-        const errorMessage = connectionTest.error ? connectionTest.error.toString() : 'Unknown error';
-        setDebugInfo(prev => `${prev}\nError: ${errorMessage}`);
+        setDebugInfo(prev => `${prev}\nError: ${connectionTest.message}`);
         
         toast({
           title: "Connection Error",
