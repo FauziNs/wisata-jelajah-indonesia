@@ -1,16 +1,63 @@
 
 import { useState, useEffect } from 'react';
 import { NavLink, Link, useNavigate } from 'react-router-dom';
-import { Menu, X, User, Search, LogOut } from 'lucide-react';
+import { Menu, X, User, Search as SearchIcon, LogOut, Settings } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useAuth } from '@/context/AuthContext';
 import { signOut } from '@/integrations/supabase/auth';
+import { supabase } from '@/integrations/supabase/client';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
   const { user, isLoading, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
   
+  useEffect(() => {
+    const checkAdminRole = async () => {
+      if (isAuthenticated && user) {
+        try {
+          const { data: profileData, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', user.id)
+            .single();
+
+          if (profileData && profileData.role === 'admin') {
+            setIsAdmin(true);
+          } else {
+            setIsAdmin(false);
+          }
+        } catch (error) {
+          console.error('Error checking admin role:', error);
+          setIsAdmin(false);
+        }
+      } else {
+        setIsAdmin(false);
+      }
+    };
+
+    checkAdminRole();
+  }, [isAuthenticated, user]);
+
   const toggleMenu = () => {
     setIsOpen(!isOpen);
   };
@@ -18,6 +65,41 @@ const Navbar = () => {
   const handleLogout = async () => {
     await signOut();
     // Auth state changes will be handled by the AuthContext
+  };
+
+  const handleSearch = async (e) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      try {
+        const { data, error } = await supabase
+          .from('destinations')
+          .select('*')
+          .ilike('name', `%${searchQuery}%`)
+          .or(`location.ilike.%${searchQuery}%`);
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          setSearchResults(data);
+          navigate(`/destinasi?q=${encodeURIComponent(searchQuery)}`);
+          setIsSearchOpen(false);
+          setSearchQuery('');
+        } else {
+          toast({
+            title: "Tidak ditemukan",
+            description: `Tidak ada destinasi dengan kata kunci "${searchQuery}"`,
+            variant: "destructive"
+          });
+        }
+      } catch (error) {
+        console.error("Error searching destinations:", error);
+        toast({
+          title: "Error",
+          description: "Terjadi kesalahan saat mencari destinasi",
+          variant: "destructive"
+        });
+      }
+    }
   };
 
   return (
@@ -48,8 +130,12 @@ const Navbar = () => {
 
         {/* User Actions */}
         <div className="hidden md:flex items-center space-x-4">
-          <Button variant="ghost" size="icon">
-            <Search className="h-5 w-5 text-gray-600" />
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={() => setIsSearchOpen(true)}
+          >
+            <SearchIcon className="h-5 w-5 text-gray-600" />
           </Button>
           
           {isAuthenticated ? (
@@ -80,6 +166,14 @@ const Navbar = () => {
                 >
                   Destinasi Tersimpan
                 </Link>
+                {isAdmin && (
+                  <Link 
+                    to="/admin" 
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    Admin Dashboard
+                  </Link>
+                )}
                 <div className="border-t border-gray-100 my-1"></div>
                 <button 
                   onClick={handleLogout}
@@ -145,6 +239,14 @@ const Navbar = () => {
                   <Link to="/saved" className="block py-2 font-medium text-gray-700 hover:text-primary" onClick={toggleMenu}>
                     Destinasi Tersimpan
                   </Link>
+                  {isAdmin && (
+                    <Link to="/admin" className="block py-2 font-medium text-gray-700 hover:text-primary bg-gray-100 rounded px-2" onClick={toggleMenu}>
+                      <div className="flex items-center">
+                        <Settings className="h-4 w-4 mr-2" />
+                        Admin Dashboard
+                      </div>
+                    </Link>
+                  )}
                   <button 
                     onClick={() => {
                       handleLogout();
@@ -177,6 +279,26 @@ const Navbar = () => {
           </div>
         </div>
       )}
+
+      {/* Search Dialog */}
+      <Dialog open={isSearchOpen} onOpenChange={setIsSearchOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Cari Destinasi</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSearch} className="flex gap-2">
+            <div className="flex-1">
+              <Input
+                placeholder="Cari destinasi wisata..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full"
+              />
+            </div>
+            <Button type="submit">Cari</Button>
+          </form>
+        </DialogContent>
+      </Dialog>
     </nav>
   );
 };
