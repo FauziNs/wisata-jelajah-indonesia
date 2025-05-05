@@ -11,7 +11,7 @@ import { signUp, uploadProfileImage, updateProfile, createUserProfile } from '@/
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
-import { testSupabaseConnection } from '@/integrations/supabase/auth';
+import { testSupabaseConnection } from '@/integrations/supabase/client';
 
 const Register = () => {
   const [formData, setFormData] = useState({
