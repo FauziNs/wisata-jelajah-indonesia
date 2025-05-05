@@ -156,6 +156,19 @@ const Register = () => {
         address: formData.address
       });
       
+      // Test Supabase connection first
+      const connectionTest = await testSupabaseConnection();
+      setDebugInfo(`Connection test: ${connectionTest.success ? 'Success' : 'Failed'}\n${connectionTest.message}`);
+      
+      if (!connectionTest.success) {
+        toast({
+          title: "Connection Error",
+          description: "Cannot connect to the server. Please try again later.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
       // Register the user with Supabase
       const { user, error, session } = await signUp({
         email: formData.email,
@@ -192,17 +205,30 @@ const Register = () => {
       // Ensure the profile is created (as a fallback if the trigger doesn't work)
       if (user) {
         // Check if the profile was automatically created by the trigger
-        const manualProfileResult = await createUserProfile(user.id, {
-          full_name: formData.fullName,
-          phone_number: formData.phone,
-          alamat: formData.address
-        });
-        
-        if (manualProfileResult.error) {
-          console.log('Manual profile creation attempted but failed (likely because profile already exists from trigger):', manualProfileResult.error);
-          setDebugInfo(prevDebug => `${prevDebug}\nProfile creation: ${manualProfileResult.error ? 'Error (might be ok if already exists)' : 'Success'}`);
+        const { data: profileCheck } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+          
+        if (!profileCheck) {
+          // Manually create profile if trigger didn't work
+          const manualProfileResult = await createUserProfile(user.id, {
+            full_name: formData.fullName,
+            phone_number: formData.phone,
+            alamat: formData.address
+          });
+          
+          if (manualProfileResult.error) {
+            console.log('Manual profile creation attempted but failed:', manualProfileResult.error);
+            setDebugInfo(prevDebug => `${prevDebug}\nManual profile creation: Failed - ${manualProfileResult.error.message}`);
+          } else {
+            console.log('Manual profile creation succeeded');
+            setDebugInfo(prevDebug => `${prevDebug}\nManual profile creation: Success`);
+          }
         } else {
-          console.log('Manual profile creation succeeded (or profile already existed)');
+          console.log('Profile was automatically created by trigger:', profileCheck);
+          setDebugInfo(prevDebug => `${prevDebug}\nProfile was automatically created by trigger`);
         }
       }
       

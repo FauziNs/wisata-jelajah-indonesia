@@ -1,3 +1,4 @@
+
 import { supabase } from './client';
 import { Session, User, AuthError } from '@supabase/supabase-js';
 
@@ -31,7 +32,11 @@ export const signUp = async (data: AuthFormData): Promise<{ user: User | null; e
       }
     });
 
-    console.log('Supabase auth response:', { authData, error });
+    console.log('Supabase auth response:', { 
+      user: authData?.user ? `User ID: ${authData.user.id}` : null,
+      session: authData?.session ? 'Session present' : 'No session',
+      error: error ? `Error: ${error.message}` : 'No error'
+    });
 
     if (error) {
       console.error('Registration error:', error);
@@ -51,6 +56,13 @@ export const signUp = async (data: AuthFormData): Promise<{ user: User | null; e
         
       if (profileError) {
         console.log('Profile verification error (might be normal if RLS prevents reading):', profileError);
+        
+        // As a fallback, manually try to create the profile
+        await createUserProfile(authData.user.id, {
+          full_name: fullName || '',
+          phone_number: phone,
+          alamat: address
+        });
       } else {
         console.log('Profile automatically created:', profileData);
       }
@@ -183,7 +195,9 @@ export const updateProfile = async (userId: string, data: Partial<{
 export const uploadProfileImage = async (userId: string, file: File): Promise<{ url: string | null; error: Error | null }> => {
   try {
     // Create a unique file path for the image
-    const filePath = `profiles/${userId}/${Date.now()}_${file.name}`;
+    const filePath = `${userId}/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+    
+    console.log(`Uploading profile image to storage/profile-images/${filePath}`);
     
     // Upload the file to Supabase storage
     const { error: uploadError } = await supabase.storage
@@ -191,6 +205,7 @@ export const uploadProfileImage = async (userId: string, file: File): Promise<{ 
       .upload(filePath, file);
     
     if (uploadError) {
+      console.error('Profile image upload error:', uploadError);
       return { url: null, error: uploadError };
     }
     
@@ -200,6 +215,7 @@ export const uploadProfileImage = async (userId: string, file: File): Promise<{ 
       .getPublicUrl(filePath);
     
     const publicUrl = data?.publicUrl || null;
+    console.log('Profile image uploaded successfully, URL:', publicUrl);
     
     return { url: publicUrl, error: null };
   } catch (err) {
@@ -211,6 +227,8 @@ export const uploadProfileImage = async (userId: string, file: File): Promise<{ 
 // Add a utility function to test Supabase connection
 export const testSupabaseConnection = async (): Promise<{ success: boolean; message: string }> => {
   try {
+    console.log('Testing Supabase connection...');
+    
     // Try to get the current session as a basic connection test
     const { data, error } = await supabase.auth.getSession();
     
@@ -235,6 +253,8 @@ export const testSupabaseConnection = async (): Promise<{ success: boolean; mess
         message: `Connected to Supabase, but database access failed: ${profilesError.message}` 
       };
     }
+    
+    console.log('Supabase connection successful, session:', data.session ? 'Active' : 'None');
     
     return { 
       success: true, 
