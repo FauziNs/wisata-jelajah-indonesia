@@ -11,6 +11,8 @@ interface DestinationCardProps {
   rating: number;
   price: string;
   category: string;
+  slug?: string;
+  onClick?: () => void;
 }
 
 const DestinationCard = ({
@@ -20,15 +22,17 @@ const DestinationCard = ({
   image,
   rating,
   price,
-  category
+  category,
+  onClick
 }: DestinationCardProps) => {
   const [isHovered, setIsHovered] = useState(false);
 
   return (
     <div
-      className="bg-white rounded-lg shadow-md overflow-hidden transition-all duration-300 hover:shadow-lg"
+      className="bg-white rounded-lg shadow-md overflow-hidden transition-all duration-300 hover:shadow-lg cursor-pointer"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      onClick={onClick}
     >
       {/* Image Container */}
       <div className="relative h-48 overflow-hidden">

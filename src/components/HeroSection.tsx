@@ -1,7 +1,8 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Search } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import SearchBar from './SearchBar';
 
 const destinations = [
@@ -30,6 +31,7 @@ const destinations = [
 const HeroSection = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isSearchVisible, setIsSearchVisible] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -37,6 +39,17 @@ const HeroSection = () => {
     }, 5000);
     return () => clearInterval(interval);
   }, []);
+
+  const scrollToFeaturedDestinations = () => {
+    const featuredSection = document.getElementById('featured-destinations');
+    if (featuredSection) {
+      featuredSection.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  const handleRegisterClick = () => {
+    navigate('/register');
+  };
 
   return (
     <section className="relative h-[600px] md:h-[650px] overflow-hidden">
@@ -68,10 +81,19 @@ const HeroSection = () => {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
-            <Button size="lg" className="bg-secondary hover:bg-secondary/90 text-white font-medium px-8">
+            <Button 
+              size="lg" 
+              className="bg-secondary hover:bg-secondary/90 text-white font-medium px-8"
+              onClick={scrollToFeaturedDestinations}
+            >
               Jelajahi Destinasi
             </Button>
-            <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/20 px-8">
+            <Button 
+              size="lg" 
+              variant="outline" 
+              className="border-white text-white hover:bg-white/20 px-8"
+              onClick={handleRegisterClick}
+            >
               Daftar Sekarang
             </Button>
           </div>

@@ -1,5 +1,6 @@
 
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import DestinationCard from './DestinationCard';
@@ -12,7 +13,8 @@ const destinations = [
     image: 'https://images.unsplash.com/photo-1539367628448-4bc5c9d171c8?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
     rating: 4.5,
     price: 'Rp 50.000',
-    category: 'Wisata Alam'
+    category: 'Wisata Alam',
+    slug: 'pantai-kuta'
   },
   {
     id: 2,
@@ -21,7 +23,8 @@ const destinations = [
     image: 'https://images.unsplash.com/photo-1596402184320-417e7178b2cd?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
     rating: 4.8,
     price: 'Rp 85.000',
-    category: 'Wisata Sejarah'
+    category: 'Wisata Sejarah',
+    slug: 'candi-borobudur'
   },
   {
     id: 3,
@@ -30,7 +33,8 @@ const destinations = [
     image: 'https://images.unsplash.com/photo-1516690561799-46d8f74f9abf?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
     rating: 4.9,
     price: 'Rp 250.000',
-    category: 'Wisata Alam'
+    category: 'Wisata Alam',
+    slug: 'raja-ampat'
   },
   {
     id: 4,
@@ -39,7 +43,8 @@ const destinations = [
     image: 'https://images.unsplash.com/photo-1589311836499-19570037e9ed?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
     rating: 4.7,
     price: 'Rp 120.000',
-    category: 'Wisata Alam'
+    category: 'Wisata Alam',
+    slug: 'gunung-bromo'
   },
   {
     id: 5,
@@ -48,7 +53,8 @@ const destinations = [
     image: 'https://images.unsplash.com/photo-1584810359583-96fc3448beaa?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
     rating: 4.3,
     price: 'Rp 25.000',
-    category: 'Wisata Budaya'
+    category: 'Wisata Budaya',
+    slug: 'taman-mini-indonesia-indah'
   },
   {
     id: 6,
@@ -57,7 +63,8 @@ const destinations = [
     image: 'https://images.unsplash.com/photo-1587135941948-670b381f08ce?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
     rating: 4.6,
     price: 'Rp 75.000',
-    category: 'Wisata Alam'
+    category: 'Wisata Alam',
+    slug: 'kawah-putih'
   },
   {
     id: 7,
@@ -66,7 +73,8 @@ const destinations = [
     image: 'https://images.unsplash.com/photo-1584810359583-96fc3448beaa?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
     rating: 4.4,
     price: 'Gratis',
-    category: 'Wisata Budaya'
+    category: 'Wisata Budaya',
+    slug: 'malioboro'
   },
   {
     id: 8,
@@ -75,7 +83,8 @@ const destinations = [
     image: 'https://images.unsplash.com/photo-1518709766631-a6a7f45921c3?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
     rating: 4.8,
     price: 'Rp 150.000',
-    category: 'Wisata Alam'
+    category: 'Wisata Alam',
+    slug: 'taman-nasional-komodo'
   }
 ];
 
@@ -83,13 +92,18 @@ const categories = ["Semua", "Wisata Alam", "Wisata Budaya", "Wisata Sejarah", "
 
 const FeaturedDestinations = () => {
   const [activeCategory, setActiveCategory] = useState("Semua");
+  const navigate = useNavigate();
 
   const filteredDestinations = activeCategory === "Semua" 
     ? destinations 
     : destinations.filter(dest => dest.category === activeCategory);
+    
+  const handleViewAllClick = () => {
+    navigate('/destinasi');
+  };
 
   return (
-    <section className="py-12 bg-gray-50">
+    <section id="featured-destinations" className="py-12 bg-gray-50">
       <div className="container-custom">
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-8">
           <div>
@@ -115,12 +129,20 @@ const FeaturedDestinations = () => {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredDestinations.map((destination) => (
-            <DestinationCard key={destination.id} {...destination} />
+            <DestinationCard 
+              key={destination.id} 
+              {...destination} 
+              onClick={() => navigate(`/destinasi/${destination.slug}`)}
+            />
           ))}
         </div>
 
         <div className="mt-10 text-center">
-          <Button variant="outline" className="text-primary border-primary hover:bg-primary/5">
+          <Button 
+            variant="outline" 
+            className="text-primary border-primary hover:bg-primary/5"
+            onClick={handleViewAllClick}
+          >
             Lihat Semua Destinasi
           </Button>
         </div>

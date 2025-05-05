@@ -4,12 +4,51 @@ import HeroSection from "@/components/HeroSection";
 import FeaturedDestinations from "@/components/FeaturedDestinations";
 import Footer from "@/components/Footer";
 import { Calendar, Ticket, MapPin, CreditCard } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import { Navigate, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
 const Index = () => {
+  const { isAuthenticated, user } = useAuth();
+  const [showAdminLink, setShowAdminLink] = useState(false);
+  const navigate = useNavigate();
+  
+  useEffect(() => {
+    // Check if user has admin role - implement your role check logic here
+    // This is a placeholder - replace with actual role check
+    const checkAdminStatus = async () => {
+      // For now just checking if the user is logged in
+      if (isAuthenticated && user) {
+        // In a real implementation, you would check the user's role
+        setShowAdminLink(true);
+      }
+    };
+    
+    checkAdminStatus();
+  }, [isAuthenticated, user]);
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
       <HeroSection />
+      
+      {/* Admin Access Button - visible only to authenticated users */}
+      {showAdminLink && (
+        <div className="container-custom my-4">
+          <Link to="/admin">
+            <Button variant="outline" className="flex items-center gap-2">
+              <span className="bg-primary/20 p-1 rounded-full">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-primary" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z" clipRule="evenodd" />
+                </svg>
+              </span>
+              Akses Admin Dashboard
+            </Button>
+          </Link>
+        </div>
+      )}
       
       {/* Benefits Section */}
       <section className="py-12 bg-white">
@@ -66,9 +105,12 @@ const Index = () => {
                 Daftar sekarang dan dapatkan diskon spesial 15% untuk pembelian tiket pertama Anda di WisataJelajah. 
                 Gunakan kode promo <strong className="bg-white text-primary px-2 py-0.5 rounded">JELAJAH15</strong>
               </p>
-              <button className="bg-accent hover:bg-accent/90 text-white py-2 px-6 rounded-md font-medium">
+              <Button 
+                className="bg-accent hover:bg-accent/90 text-white py-2 px-6 rounded-md font-medium"
+                onClick={() => navigate('/promo')}
+              >
                 Dapatkan Promo
-              </button>
+              </Button>
             </div>
             
             <div className="w-full md:w-auto">

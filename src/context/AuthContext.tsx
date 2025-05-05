@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase, testSupabaseConnection } from '@/integrations/supabase/client';
@@ -45,6 +46,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             title: "Login berhasil",
             description: "Selamat datang kembali!",
           });
+          // Redirect to homepage after successful login
+          navigate('/');
         } else if (event === 'SIGNED_OUT') {
           console.log('User signed out');
           toast({
