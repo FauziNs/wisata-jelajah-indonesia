@@ -160,9 +160,12 @@ const Register = () => {
       
       // Test Supabase connection first
       const connectionTest = await testSupabaseConnection();
-      setDebugInfo(`Connection test: ${connectionTest.success ? 'Success' : 'Failed'}\n${connectionTest.message}`);
+      setDebugInfo(`Connection test: ${connectionTest.success ? 'Success' : 'Failed'}`);
       
       if (!connectionTest.success) {
+        const errorMessage = connectionTest.error ? connectionTest.error.toString() : 'Unknown error';
+        setDebugInfo(prev => `${prev}\nError: ${errorMessage}`);
+        
         toast({
           title: "Connection Error",
           description: "Cannot connect to the server. Please try again later.",

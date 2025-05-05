@@ -1,4 +1,3 @@
-
 import { supabase } from './client';
 import { Session, User, AuthError } from '@supabase/supabase-js';
 
@@ -221,50 +220,5 @@ export const uploadProfileImage = async (userId: string, file: File): Promise<{ 
   } catch (err) {
     console.error('Error uploading profile image:', err);
     return { url: null, error: err as Error };
-  }
-};
-
-// Add a utility function to test Supabase connection
-export const testSupabaseConnection = async (): Promise<{ success: boolean; message: string }> => {
-  try {
-    console.log('Testing Supabase connection...');
-    
-    // Try to get the current session as a basic connection test
-    const { data, error } = await supabase.auth.getSession();
-    
-    if (error) {
-      console.error('Supabase connection test error:', error);
-      return { 
-        success: false, 
-        message: `Failed to connect to Supabase: ${error.message}` 
-      };
-    }
-    
-    // Try to query a simple table to test database access
-    const { error: profilesError } = await supabase
-      .from('profiles')
-      .select('count')
-      .limit(1);
-      
-    if (profilesError) {
-      console.error('Database access test error:', profilesError);
-      return { 
-        success: false, 
-        message: `Connected to Supabase, but database access failed: ${profilesError.message}` 
-      };
-    }
-    
-    console.log('Supabase connection successful, session:', data.session ? 'Active' : 'None');
-    
-    return { 
-      success: true, 
-      message: 'Successfully connected to Supabase and database' 
-    };
-  } catch (err) {
-    console.error('Unexpected error testing connection:', err);
-    return { 
-      success: false, 
-      message: `Unexpected error connecting to Supabase: ${String(err)}` 
-    };
   }
 };
