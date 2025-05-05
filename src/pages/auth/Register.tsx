@@ -10,6 +10,8 @@ import { useToast } from '@/hooks/use-toast';
 import { signUp, uploadProfileImage, updateProfile, createUserProfile } from '@/integrations/supabase/auth';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { supabase } from '@/integrations/supabase/client';
+import { testSupabaseConnection } from '@/integrations/supabase/auth';
 
 const Register = () => {
   const [formData, setFormData] = useState({
