@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { NavLink, Link, useNavigate } from 'react-router-dom';
 import { Menu, X, User, Search as SearchIcon, LogOut, Settings } from 'lucide-react';
@@ -41,10 +40,9 @@ const Navbar = () => {
             .eq('id', user.id)
             .single();
 
-          // Check if profileData exists and has a role property, otherwise default to 'user'
-          if (profileData) {
-            // Check if profileData has a role property, if not it's a standard user
-            setIsAdmin(profileData.role === 'admin');
+          // Check if profileData exists and has a role property using safe optional chaining
+          if (profileData && profileData.role === 'admin') {
+            setIsAdmin(true);
           } else {
             setIsAdmin(false);
           }

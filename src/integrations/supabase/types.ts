@@ -243,6 +243,7 @@ export type Database = {
           id: string
           phone_number: string | null
           profile_picture_url: string | null
+          role: string | null
           updated_at: string
         }
         Insert: {
@@ -252,6 +253,7 @@ export type Database = {
           id: string
           phone_number?: string | null
           profile_picture_url?: string | null
+          role?: string | null
           updated_at?: string
         }
         Update: {
@@ -261,6 +263,7 @@ export type Database = {
           id?: string
           phone_number?: string | null
           profile_picture_url?: string | null
+          role?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -354,6 +357,35 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      saved_destinations: {
+        Row: {
+          destination_id: string
+          id: string
+          saved_at: string
+          user_id: string
+        }
+        Insert: {
+          destination_id: string
+          id?: string
+          saved_at?: string
+          user_id: string
+        }
+        Update: {
+          destination_id?: string
+          id?: string
+          saved_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_destinations_destination_id_fkey"
+            columns: ["destination_id"]
+            isOneToOne: false
+            referencedRelation: "destinations"
             referencedColumns: ["id"]
           },
         ]

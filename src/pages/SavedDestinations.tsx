@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
@@ -27,48 +26,70 @@ const SavedDestinations = () => {
       try {
         setLoading(true);
         
-        // First get all saved_destinations
+        // Using custom query without type checking for saved_destinations
         const { data: savedData, error: savedError } = await supabase
-          .from('saved_destinations')
-          .select('id, destination_id, saved_at')
-          .eq('user_id', user.id)
+          .rpc('get_saved_destinations', { user_id_param: user.id })
           .order('saved_at', { ascending: false });
         
-        if (savedError) throw savedError;
-        
-        if (savedData && savedData.length > 0) {
-          // Then get the destination details for each saved destination
-          const destinationPromises = savedData.map(async (item) => {
-            const { data: destData, error: destError } = await supabase
-              .from('destinations')
-              .select('id, name, location, image_url, rating, category')
-              .eq('id', item.destination_id)
-              .single();
-            
-            if (destError) return null;
-            
-            return {
-              id: destData.id,
-              name: destData.name,
-              location: destData.location,
-              image: destData.image_url,
-              rating: destData.rating || 0,
-              price: 'Mulai dari Rp 50.000',
-              category: destData.category,
-              saved_id: item.id
-            };
-          });
+        if (savedError) {
+          // If RPC doesn't exist, fall back to direct query using raw SQL
+          const { data: rawData, error: rawError } = await supabase
+            .from('saved_destinations')
+            .select('id, destination_id, saved_at')
+            .eq('user_id', user.id)
+            .order('saved_at', { ascending: false });
           
-          const results = await Promise.all(destinationPromises);
-          setSavedDestinations(results.filter(item => item !== null));
-        } else {
-          setSavedDestinations([]);
+          if (rawError) throw rawError;
+          if (rawData && rawData.length > 0) {
+            fetchDestinationDetails(rawData);
+          } else {
+            setSavedDestinations([]);
+            setLoading(false);
+          }
+        } else if (savedData) {
+          fetchDestinationDetails(savedData);
         }
       } catch (error) {
         console.error('Error fetching saved destinations:', error);
         toast({
           title: "Error",
           description: "Failed to load saved destinations",
+          variant: "destructive"
+        });
+        setLoading(false);
+      }
+    };
+    
+    const fetchDestinationDetails = async (savedItems) => {
+      try {
+        const destinationPromises = savedItems.map(async (item) => {
+          const { data: destData, error: destError } = await supabase
+            .from('destinations')
+            .select('id, name, location, image_url, rating, category')
+            .eq('id', item.destination_id)
+            .single();
+          
+          if (destError) return null;
+          
+          return {
+            id: destData.id,
+            name: destData.name,
+            location: destData.location,
+            image: destData.image_url,
+            rating: destData.rating || 0,
+            price: 'Mulai dari Rp 50.000',
+            category: destData.category,
+            saved_id: item.id
+          };
+        });
+        
+        const results = await Promise.all(destinationPromises);
+        setSavedDestinations(results.filter(item => item !== null));
+      } catch (error) {
+        console.error('Error fetching destination details:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load destination details",
           variant: "destructive"
         });
       } finally {

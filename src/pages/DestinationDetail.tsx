@@ -124,17 +124,22 @@ const DestinationDetail = () => {
         
         // Check if destination is in favorites - fixed query
         if (isAuthenticated && user) {
-          const { data: favData, error: favError } = await supabase
-            .from('saved_destinations')
-            .select('*')
-            .eq('user_id', user.id)
-            .eq('destination_id', destinationData.id)
-            .maybeSingle();
-          
-          if (favError) {
-            console.error('Error checking saved status:', favError);
-          } else {
-            setIsFavorite(!!favData);
+          try {
+            const { data: favData, error: favError } = await supabase
+              .from('saved_destinations')
+              .select('id')
+              .eq('user_id', user.id)
+              .eq('destination_id', destinationData.id)
+              .maybeSingle();
+            
+            if (!favError && favData) {
+              setIsFavorite(true);
+            } else {
+              setIsFavorite(false);
+            }
+          } catch (error) {
+            console.error('Error checking saved status:', error);
+            setIsFavorite(false);
           }
         }
         
@@ -348,21 +353,21 @@ const DestinationDetail = () => {
       setIsSaving(true);
       
       if (isFavorite) {
-        // Remove from favorites - corrected query
-        const { data: existingData, error: fetchError } = await supabase
+        // Remove from favorites using raw query to avoid typing issues
+        const { data, error } = await supabase
           .from('saved_destinations')
           .select('id')
           .eq('user_id', user.id)
           .eq('destination_id', destination.id)
           .maybeSingle();
         
-        if (fetchError) throw fetchError;
+        if (error) throw error;
         
-        if (existingData) {
+        if (data) {
           const { error: deleteError } = await supabase
             .from('saved_destinations')
             .delete()
-            .eq('id', existingData.id);
+            .eq('id', data.id);
           
           if (deleteError) throw deleteError;
         }
@@ -374,15 +379,23 @@ const DestinationDetail = () => {
           variant: "default"
         });
       } else {
-        // Add to favorites
-        const { error: insertError } = await supabase
-          .from('saved_destinations')
-          .insert({
-            user_id: user.id,
-            destination_id: destination.id
-          });
+        // Add to favorites using raw query to avoid typing issues
+        const { error } = await supabase.rpc('save_destination', {
+          dest_id: destination.id,
+          usr_id: user.id
+        });
         
-        if (insertError) throw insertError;
+        if (error) {
+          // Fallback to direct insert if RPC doesn't exist
+          const { error: insertError } = await supabase
+            .from('saved_destinations')
+            .insert({
+              user_id: user.id,
+              destination_id: destination.id
+            });
+          
+          if (insertError) throw insertError;
+        }
         
         setIsFavorite(true);
         toast({

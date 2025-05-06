@@ -38,3 +38,35 @@ BEGIN
     WHEN duplicate_column THEN RAISE NOTICE 'column role already exists in public.profiles';
   END;
 END $$;
+
+-- Create helper function to get saved destinations
+CREATE OR REPLACE FUNCTION public.get_saved_destinations(user_id_param UUID)
+RETURNS TABLE (
+  id UUID,
+  destination_id UUID,
+  saved_at TIMESTAMPTZ
+) 
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  RETURN QUERY
+  SELECT sd.id, sd.destination_id, sd.saved_at
+  FROM saved_destinations sd
+  WHERE sd.user_id = user_id_param
+  ORDER BY sd.saved_at DESC;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create helper function to save destination
+CREATE OR REPLACE FUNCTION public.save_destination(dest_id UUID, usr_id UUID)
+RETURNS void
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  INSERT INTO saved_destinations (destination_id, user_id)
+  VALUES (dest_id, usr_id)
+  ON CONFLICT (user_id, destination_id) DO NOTHING;
+END;
+$$ LANGUAGE plpgsql;
