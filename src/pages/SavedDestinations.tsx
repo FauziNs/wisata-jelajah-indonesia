@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
@@ -26,22 +27,24 @@ const SavedDestinations = () => {
       try {
         setLoading(true);
         
-        // Using custom query without type checking for saved_destinations
+        // Using the RPC function to get saved destinations
         const { data: savedData, error: savedError } = await supabase
-          .rpc('get_saved_destinations', { user_id_param: user.id })
-          .order('saved_at', { ascending: false });
+          .rpc('get_saved_destinations', { user_id_param: user.id });
         
         if (savedError) {
-          // If RPC doesn't exist, fall back to direct query using raw SQL
-          const { data: rawData, error: rawError } = await supabase
+          console.error('Error from RPC:', savedError);
+          
+          // Fallback to direct query if RPC fails
+          const { data: fallbackData, error: fallbackError } = await supabase
             .from('saved_destinations')
             .select('id, destination_id, saved_at')
             .eq('user_id', user.id)
             .order('saved_at', { ascending: false });
           
-          if (rawError) throw rawError;
-          if (rawData && rawData.length > 0) {
-            fetchDestinationDetails(rawData);
+          if (fallbackError) throw fallbackError;
+          
+          if (fallbackData && fallbackData.length > 0) {
+            fetchDestinationDetails(fallbackData);
           } else {
             setSavedDestinations([]);
             setLoading(false);
