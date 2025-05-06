@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
@@ -13,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { Clock, Check, AlertCircle, Download, Printer } from 'lucide-react';
-import QRCode from 'qrcode.react'; // Fixed import
+import { QRCodeSVG } from 'qrcode.react'; // Correct import
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { jsPDF } from 'jspdf';
@@ -415,7 +414,7 @@ const Payment = () => {
                       <div className="flex flex-col md:flex-row gap-6 mb-6">
                         <div className="md:w-1/3 flex flex-col items-center justify-center">
                           <div className="w-full max-w-[180px] bg-white p-2 border rounded-md">
-                            <QRCode 
+                            <QRCodeSVG 
                               value={`${generateBookingCode()}`}
                               size={160}
                               level={"H"}

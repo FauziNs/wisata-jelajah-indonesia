@@ -27,30 +27,25 @@ const SavedDestinations = () => {
       try {
         setLoading(true);
         
-        // Using the RPC function to get saved destinations
+        // Directly query saved_destinations table
         const { data: savedData, error: savedError } = await supabase
-          .rpc('get_saved_destinations', { user_id_param: user.id });
+          .from('saved_destinations')
+          .select('id, destination_id, saved_at')
+          .eq('user_id', user.id)
+          .order('saved_at', { ascending: false });
         
         if (savedError) {
-          console.error('Error from RPC:', savedError);
-          
-          // Fallback to direct query if RPC fails
-          const { data: fallbackData, error: fallbackError } = await supabase
-            .from('saved_destinations')
-            .select('id, destination_id, saved_at')
-            .eq('user_id', user.id)
-            .order('saved_at', { ascending: false });
-          
-          if (fallbackError) throw fallbackError;
-          
-          if (fallbackData && fallbackData.length > 0) {
-            fetchDestinationDetails(fallbackData);
-          } else {
-            setSavedDestinations([]);
-            setLoading(false);
-          }
-        } else if (savedData) {
+          console.error('Error fetching saved destinations:', savedError);
+          setSavedDestinations([]);
+          setLoading(false);
+          return;
+        }
+        
+        if (savedData && savedData.length > 0) {
           fetchDestinationDetails(savedData);
+        } else {
+          setSavedDestinations([]);
+          setLoading(false);
         }
       } catch (error) {
         console.error('Error fetching saved destinations:', error);

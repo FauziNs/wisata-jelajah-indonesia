@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
@@ -51,7 +52,9 @@ const DestinationDetail = () => {
     }
 
     fetchData();
-    checkIfSaved();
+    if (isAuthenticated && user) {
+      checkIfSaved();
+    }
   }, [id, isAuthenticated, user, navigate]);
 
   const fetchData = async () => {
@@ -95,18 +98,18 @@ const DestinationDetail = () => {
     }
 
     try {
-      // Use the save_destination RPC function to safely check
       const { data, error } = await supabase
-        .rpc('get_saved_destinations', { user_id_param: user.id });
+        .from('saved_destinations')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('destination_id', id);
 
       if (error) {
         console.error("Error checking saved status:", error);
         return;
       }
 
-      // Check if this destination is in the saved list
-      const isSavedDestination = data && data.some(item => item.destination_id === id);
-      setIsSaved(isSavedDestination);
+      setIsSaved(data && data.length > 0);
     } catch (error) {
       console.error("Error checking saved status:", error);
     }
@@ -121,19 +124,21 @@ const DestinationDetail = () => {
 
     try {
       if (isSaved) {
-        // Find the saved_id first
-        const { data, error: findError } = await supabase
-          .rpc('get_saved_destinations', { user_id_param: user.id });
+        // Find the saved record to delete
+        const { data: savedData, error: findError } = await supabase
+          .from('saved_destinations')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('destination_id', id);
 
         if (findError) throw findError;
-
-        const savedItem = data.find(item => item.destination_id === id);
-        if (savedItem) {
-          // Delete using the saved_id
+        
+        if (savedData && savedData.length > 0) {
+          // Delete using the found ID
           const { error: deleteError } = await supabase
             .from('saved_destinations')
             .delete()
-            .eq('id', savedItem.id);
+            .eq('id', savedData[0].id);
 
           if (deleteError) throw deleteError;
           
@@ -145,11 +150,12 @@ const DestinationDetail = () => {
           });
         }
       } else {
-        // Insert using RPC function
+        // Insert new saved destination
         const { error: insertError } = await supabase
-          .rpc('save_destination', { 
-            dest_id: id, 
-            usr_id: user.id 
+          .from('saved_destinations')
+          .insert({
+            user_id: user.id,
+            destination_id: id
           });
 
         if (insertError) throw insertError;
@@ -240,7 +246,7 @@ const DestinationDetail = () => {
         <div className="flex items-center mb-4">
           <Star className="mr-2 h-4 w-4 text-yellow-500" />
           <span className="font-medium">{destination.rating || 0}</span>
-          <span className="text-gray-500">({destination.review_count || 0} ulasan)</span>
+          <span className="text-gray-500">({destination.reviews_count || 0} ulasan)</span>
         </div>
 
         <Tabs defaultValue="informasi" className="w-full mb-6">
@@ -278,7 +284,7 @@ const DestinationDetail = () => {
                 <h3 className="text-xl font-semibold mb-4">Jam Buka</h3>
                 <div className="flex items-center text-gray-700 mb-2">
                   <Clock className="mr-2 h-4 w-4" />
-                  {destination.opening_hours || 'Tidak ada informasi jam buka'}
+                  {destination.operational_hours || 'Tidak ada informasi jam buka'}
                 </div>
                 <div className="flex items-center text-gray-700">
                   <Calendar className="mr-2 h-4 w-4" />
@@ -331,11 +337,11 @@ const DestinationDetail = () => {
                         <p className="text-gray-700 mb-2">{ticket.description}</p>
                         <div className="flex items-center text-gray-700 mb-2">
                           <User className="mr-2 h-4 w-4" />
-                          Kapasitas: {ticket.capacity} orang
+                          Kapasitas: {ticket.capacity || 'Tidak terbatas'} orang
                         </div>
                         <div className="flex items-center text-gray-700 mb-2">
                           <CheckCircle className="mr-2 h-4 w-4" />
-                          Validitas: {ticket.validity_duration} hari
+                          Validitas: {ticket.validity_duration || '1'} hari
                         </div>
                         <Button onClick={() => navigate(`/booking/${id}?ticket_type=${ticket.id}`)}>
                           Pesan Sekarang
