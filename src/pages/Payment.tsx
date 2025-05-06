@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
@@ -12,7 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { Clock, Check, AlertCircle, Download, Printer } from 'lucide-react';
-import { QRCodeSVG } from 'qrcode.react'; // Correct import
+import { QRCodeSVG } from 'qrcode.react'; 
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { jsPDF } from 'jspdf';
