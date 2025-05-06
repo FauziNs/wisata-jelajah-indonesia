@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
@@ -123,16 +122,20 @@ const DestinationDetail = () => {
           setFaqs(faqsData);
         }
         
-        // Check if destination is in favorites
+        // Check if destination is in favorites - fixed query
         if (isAuthenticated && user) {
-          const { data: favData } = await supabase
+          const { data: favData, error: favError } = await supabase
             .from('saved_destinations')
             .select('*')
             .eq('user_id', user.id)
             .eq('destination_id', destinationData.id)
             .maybeSingle();
           
-          setIsFavorite(!!favData);
+          if (favError) {
+            console.error('Error checking saved status:', favError);
+          } else {
+            setIsFavorite(!!favData);
+          }
         }
         
       } catch (error) {
@@ -345,14 +348,24 @@ const DestinationDetail = () => {
       setIsSaving(true);
       
       if (isFavorite) {
-        // Remove from favorites
-        const { error } = await supabase
+        // Remove from favorites - corrected query
+        const { data: existingData, error: fetchError } = await supabase
           .from('saved_destinations')
-          .delete()
+          .select('id')
           .eq('user_id', user.id)
-          .eq('destination_id', destination.id);
+          .eq('destination_id', destination.id)
+          .maybeSingle();
         
-        if (error) throw error;
+        if (fetchError) throw fetchError;
+        
+        if (existingData) {
+          const { error: deleteError } = await supabase
+            .from('saved_destinations')
+            .delete()
+            .eq('id', existingData.id);
+          
+          if (deleteError) throw deleteError;
+        }
         
         setIsFavorite(false);
         toast({
@@ -362,15 +375,14 @@ const DestinationDetail = () => {
         });
       } else {
         // Add to favorites
-        const { error } = await supabase
+        const { error: insertError } = await supabase
           .from('saved_destinations')
           .insert({
             user_id: user.id,
-            destination_id: destination.id,
-            saved_at: new Date().toISOString()
+            destination_id: destination.id
           });
         
-        if (error) throw error;
+        if (insertError) throw insertError;
         
         setIsFavorite(true);
         toast({

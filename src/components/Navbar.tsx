@@ -41,8 +41,10 @@ const Navbar = () => {
             .eq('id', user.id)
             .single();
 
-          if (profileData && profileData.role === 'admin') {
-            setIsAdmin(true);
+          // Check if profileData exists and has a role property, otherwise default to 'user'
+          if (profileData) {
+            // Check if profileData has a role property, if not it's a standard user
+            setIsAdmin(profileData.role === 'admin');
           } else {
             setIsAdmin(false);
           }

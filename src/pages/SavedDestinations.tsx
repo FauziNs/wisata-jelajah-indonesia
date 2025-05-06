@@ -27,39 +27,43 @@ const SavedDestinations = () => {
       try {
         setLoading(true);
         
-        const { data, error } = await supabase
+        // First get all saved_destinations
+        const { data: savedData, error: savedError } = await supabase
           .from('saved_destinations')
-          .select(`
-            id,
-            destination_id,
-            saved_at,
-            destinations (
-              id,
-              name,
-              location,
-              image_url,
-              rating,
-              category
-            )
-          `)
+          .select('id, destination_id, saved_at')
           .eq('user_id', user.id)
           .order('saved_at', { ascending: false });
         
-        if (error) throw error;
+        if (savedError) throw savedError;
         
-        // Format the data for DestinationCard
-        const formattedData = data.map(item => ({
-          id: item.destinations.id,
-          name: item.destinations.name,
-          location: item.destinations.location,
-          image: item.destinations.image_url,
-          rating: item.destinations.rating || 0,
-          price: 'Mulai dari Rp 50.000',
-          category: item.destinations.category,
-          saved_id: item.id
-        }));
-        
-        setSavedDestinations(formattedData);
+        if (savedData && savedData.length > 0) {
+          // Then get the destination details for each saved destination
+          const destinationPromises = savedData.map(async (item) => {
+            const { data: destData, error: destError } = await supabase
+              .from('destinations')
+              .select('id, name, location, image_url, rating, category')
+              .eq('id', item.destination_id)
+              .single();
+            
+            if (destError) return null;
+            
+            return {
+              id: destData.id,
+              name: destData.name,
+              location: destData.location,
+              image: destData.image_url,
+              rating: destData.rating || 0,
+              price: 'Mulai dari Rp 50.000',
+              category: destData.category,
+              saved_id: item.id
+            };
+          });
+          
+          const results = await Promise.all(destinationPromises);
+          setSavedDestinations(results.filter(item => item !== null));
+        } else {
+          setSavedDestinations([]);
+        }
       } catch (error) {
         console.error('Error fetching saved destinations:', error);
         toast({

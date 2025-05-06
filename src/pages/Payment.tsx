@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
@@ -150,7 +149,7 @@ const Payment = () => {
         .update({ 
           payment_proof: publicUrlData.publicUrl,
           payment_status: 'waiting_confirmation',
-          updated_at: new Date()
+          updated_at: new Date().toISOString() // Fix type error: convert Date to string
         })
         .eq('id', booking.id);
       
@@ -188,7 +187,7 @@ const Payment = () => {
         .update({
           payment_status: 'paid',
           status: 'confirmed',
-          updated_at: new Date()
+          updated_at: new Date().toISOString() // Fix type error: convert Date to string
         })
         .eq('id', booking.id);
       

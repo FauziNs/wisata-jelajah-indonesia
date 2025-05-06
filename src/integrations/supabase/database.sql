@@ -29,7 +29,7 @@ CREATE POLICY "Users can remove their saved destinations"
   FOR DELETE 
   USING (auth.uid() = user_id);
 
--- Add role field to profiles table
+-- Add role field to profiles table if it doesn't exist
 DO $$ 
 BEGIN
   BEGIN
