@@ -14,7 +14,7 @@ const popularDestinations = [
 ];
 
 const categoryOptions = [
-  { value: '', label: 'Semua Kategori' },
+  { value: 'all', label: 'Semua Kategori' },
   { value: 'alam', label: 'Wisata Alam' },
   { value: 'budaya', label: 'Wisata Budaya' },
   { value: 'sejarah', label: 'Wisata Sejarah' },
@@ -24,7 +24,7 @@ const categoryOptions = [
 const SearchBar = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
-  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all');
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const navigate = useNavigate();
@@ -46,7 +46,7 @@ const SearchBar = () => {
     
     const params = new URLSearchParams();
     if (searchQuery) params.set('q', searchQuery);
-    if (selectedCategory) params.set('category', selectedCategory);
+    if (selectedCategory && selectedCategory !== 'all') params.set('category', selectedCategory);
     if (selectedDate) params.set('date', format(selectedDate, 'yyyy-MM-dd'));
     
     navigate(`/destinasi?${params.toString()}`);

@@ -145,7 +145,7 @@ const DestinationsList = () => {
                   </div>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Semua Kategori</SelectItem>
+                  <SelectItem value="all">Semua Kategori</SelectItem>
                   <SelectItem value="Wisata Alam">Wisata Alam</SelectItem>
                   <SelectItem value="Wisata Sejarah">Wisata Sejarah</SelectItem>
                   <SelectItem value="Pantai">Pantai</SelectItem>
@@ -166,7 +166,7 @@ const DestinationsList = () => {
                   </div>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Semua Status</SelectItem>
+                  <SelectItem value="all">Semua Status</SelectItem>
                   <SelectItem value="Regular">Regular</SelectItem>
                   <SelectItem value="Featured">Featured</SelectItem>
                   <SelectItem value="Highlight">Highlight</SelectItem>
@@ -194,8 +194,8 @@ const DestinationsList = () => {
             {destinations
               .filter(dest => 
                 (!searchTerm || dest.name.toLowerCase().includes(searchTerm.toLowerCase())) &&
-                (!selectedCategory || dest.category === selectedCategory) &&
-                (!selectedStatus || dest.status === selectedStatus)
+                (!selectedCategory || selectedCategory === "all" || dest.category === selectedCategory) &&
+                (!selectedStatus || selectedStatus === "all" || dest.status === selectedStatus)
               )
               .map((destination) => (
                 <TableRow key={destination.id}>
