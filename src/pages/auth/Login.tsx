@@ -1,6 +1,5 @@
-
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
@@ -10,6 +9,8 @@ import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { signIn, resetPassword } from '@/integrations/supabase/auth';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -21,7 +22,39 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
+  const { user } = useAuth();
+
+  // Get redirect path from URL params if it exists
+  const searchParams = new URLSearchParams(location.search);
+  const redirectTo = searchParams.get('redirect') || '/';
+
+  useEffect(() => {
+    // If user is already logged in, redirect them
+    if (user) {
+      checkUserRole(user.id);
+    }
+  }, [user]);
+
+  // Check user role and redirect accordingly
+  const checkUserRole = async (userId: string) => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', userId)
+      .single();
+      
+    if (!error && data) {
+      if (data.role === 'admin' && redirectTo === '/') {
+        navigate('/admin');
+      } else {
+        navigate(redirectTo);
+      }
+    } else {
+      navigate(redirectTo);
+    }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type } = e.target;
@@ -106,7 +139,7 @@ const Login = () => {
         return;
       }
       
-      // Redirect handled by auth context
+      // Redirect handled by auth context and useEffect above
     } catch (error) {
       console.error('Login error:', error);
       toast({

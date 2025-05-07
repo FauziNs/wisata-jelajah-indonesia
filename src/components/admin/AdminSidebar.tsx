@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Home,
   Map,
@@ -14,10 +13,14 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { signOut } from '@/integrations/supabase/auth';
+import { useToast } from '@/hooks/use-toast';
 
 const AdminSidebar = () => {
   const [collapsed, setCollapsed] = React.useState(false);
   const location = useLocation();
+  const { toast } = useToast();
+  const navigate = useNavigate();
 
   const navItems = [
     {
@@ -78,6 +81,24 @@ const AdminSidebar = () => {
 
   const isActiveGroup = (href: string) => {
     return location.pathname.startsWith(href);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      toast({
+        title: "Logout berhasil",
+        description: "Anda telah keluar dari akun admin"
+      });
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast({
+        title: "Error",
+        description: "Gagal keluar dari akun",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
@@ -185,6 +206,7 @@ const AdminSidebar = () => {
 
       <div className="p-4 border-t">
         <button
+          onClick={handleLogout}
           className={cn(
             "flex items-center w-full px-3 py-2 rounded-md text-sm text-gray-700 hover:bg-gray-100 transition-colors",
             collapsed && "justify-center"

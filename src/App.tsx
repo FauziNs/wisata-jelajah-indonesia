@@ -23,6 +23,7 @@ import AdminLayout from './layouts/AdminLayout';
 import AdminDashboard from './pages/admin/Dashboard';
 import AdminDestinations from './pages/admin/Destinations';
 import DestinationForm from './pages/admin/DestinationForm';
+import Transactions from './pages/admin/Transactions';
 
 // New Pages
 import SavedDestinations from './pages/SavedDestinations';
@@ -53,6 +54,7 @@ function App() {
             <Route path="destinations" element={<AdminDestinations />} />
             <Route path="destinations/new" element={<DestinationForm />} />
             <Route path="destinations/edit/:id" element={<DestinationForm />} />
+            <Route path="transactions" element={<Transactions />} />
           </Route>
           
           <Route path="*" element={<NotFound />} />
