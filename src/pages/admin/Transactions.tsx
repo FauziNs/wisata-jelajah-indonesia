@@ -1,114 +1,36 @@
 
-import React, { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-import { Button } from '@/components/ui/button';
-import { Loader2 } from 'lucide-react';
-import BookingFilters from '@/components/admin/transactions/BookingFilters';
-import BookingsTable from '@/components/admin/transactions/BookingsTable';
-import BookingDetailDialog from '@/components/admin/transactions/BookingDetailDialog';
+import React, { useState } from 'react';
 import { Booking } from '@/components/admin/transactions/types';
+import TransactionHeader from '@/components/admin/transactions/TransactionHeader';
+import TransactionContainer from '@/components/admin/transactions/TransactionContainer';
+import BookingDetailDialog from '@/components/admin/transactions/BookingDetailDialog';
+import { useTransactions } from '@/hooks/useTransactions';
 
 const Transactions = () => {
-  const [bookings, setBookings] = useState<Booking[]>([]);
-  const [loading, setLoading] = useState(true);
+  const {
+    bookings,
+    loading,
+    currentPage,
+    totalItems,
+    itemsPerPage,
+    fetchBookings,
+    handleBookingUpdated,
+    handlePageChange
+  } = useTransactions();
+
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [selectedPaymentStatus, setSelectedPaymentStatus] = useState('all');
   const [bookingDetail, setBookingDetail] = useState<Booking | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const { toast } = useToast();
-  
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalItems, setTotalItems] = useState(0);
-  const itemsPerPage = 10;
-  
-  useEffect(() => {
-    fetchBookings();
-  }, [currentPage]);
-  
-  const fetchBookings = async () => {
-    setLoading(true);
-    try {
-      // First count total bookings for pagination
-      const { count: totalCount, error: countError } = await supabase
-        .from('bookings')
-        .select('*', { count: 'exact', head: true });
-        
-      if (countError) {
-        throw countError;
-      }
-      
-      if (totalCount !== null) {
-        setTotalItems(totalCount);
-      }
-      
-      // Then get paginated bookings
-      const from = (currentPage - 1) * itemsPerPage;
-      const to = from + itemsPerPage - 1;
-      
-      const { data: bookingsData, error: bookingsError } = await supabase
-        .from('bookings')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .range(from, to);
-        
-      if (bookingsError) {
-        throw bookingsError;
-      }
-      
-      // Fetch destination names for each booking
-      let enrichedBookings = [];
-      for (const booking of bookingsData || []) {
-        // Get destination name
-        const { data: destinationData } = await supabase
-          .from('destinations')
-          .select('name')
-          .eq('id', booking.destination_id)
-          .single();
-          
-        // Get ticket type name
-        const { data: ticketTypeData } = await supabase
-          .from('ticket_types')
-          .select('name')
-          .eq('id', booking.ticket_type_id)
-          .single();
-          
-        enrichedBookings.push({
-          ...booking,
-          destination_name: destinationData?.name || 'Unknown Destination',
-          ticket_type_name: ticketTypeData?.name || 'Unknown Ticket Type'
-        });
-      }
-      
-      setBookings(enrichedBookings);
-    } catch (error) {
-      console.error('Error fetching bookings:', error);
-      toast({
-        title: "Error",
-        description: "Gagal mengambil data pemesanan",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
   
   const viewBookingDetails = (booking: Booking) => {
     setBookingDetail(booking);
     setIsDialogOpen(true);
   };
 
-  const handleBookingUpdated = (bookingId: string, newStatus: string, newPaymentStatus: string) => {
-    // Update the local state
-    setBookings(prevBookings => 
-      prevBookings.map(booking => 
-        booking.id === bookingId 
-          ? { ...booking, status: newStatus, payment_status: newPaymentStatus } 
-          : booking
-      )
-    );
+  const handleDetailBookingUpdated = (bookingId: string, newStatus: string, newPaymentStatus: string) => {
+    handleBookingUpdated(bookingId, newStatus, newPaymentStatus);
     
     if (bookingDetail && bookingDetail.id === bookingId) {
       setBookingDetail({
@@ -117,10 +39,6 @@ const Transactions = () => {
         payment_status: newPaymentStatus
       });
     }
-  };
-
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
   };
   
   const filteredBookings = bookings.filter(booking => 
@@ -132,46 +50,30 @@ const Transactions = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-        <h1 className="text-2xl font-bold">Manajemen Transaksi</h1>
-        <Button onClick={fetchBookings} disabled={loading}>
-          {loading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Loading...
-            </>
-          ) : (
-            'Refresh Data'
-          )}
-        </Button>
-      </div>
+      <TransactionHeader loading={loading} onRefresh={fetchBookings} />
       
-      <div className="bg-white rounded-lg shadow p-6">
-        <BookingFilters
-          searchTerm={searchTerm}
-          onSearchChange={setSearchTerm}
-          selectedStatus={selectedStatus}
-          onStatusChange={setSelectedStatus}
-          selectedPaymentStatus={selectedPaymentStatus}
-          onPaymentStatusChange={setSelectedPaymentStatus}
-        />
-        
-        <BookingsTable
-          bookings={filteredBookings}
-          loading={loading}
-          onViewDetails={viewBookingDetails}
-          currentPage={currentPage}
-          totalItems={totalItems}
-          itemsPerPage={itemsPerPage}
-          onPageChange={handlePageChange}
-        />
-      </div>
+      <TransactionContainer
+        bookings={bookings}
+        loading={loading}
+        searchTerm={searchTerm}
+        selectedStatus={selectedStatus}
+        selectedPaymentStatus={selectedPaymentStatus}
+        onSearchChange={setSearchTerm}
+        onStatusChange={setSelectedStatus}
+        onPaymentStatusChange={setSelectedPaymentStatus}
+        onViewDetails={viewBookingDetails}
+        currentPage={currentPage}
+        totalItems={totalItems}
+        itemsPerPage={itemsPerPage}
+        onPageChange={handlePageChange}
+        filteredBookings={filteredBookings}
+      />
       
       <BookingDetailDialog
         bookingDetail={bookingDetail}
         isOpen={isDialogOpen}
         onOpenChange={setIsDialogOpen}
-        onBookingUpdated={handleBookingUpdated}
+        onBookingUpdated={handleDetailBookingUpdated}
       />
     </div>
   );
