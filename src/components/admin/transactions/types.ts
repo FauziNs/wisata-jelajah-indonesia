@@ -17,3 +17,10 @@ export type Booking = {
   status: string;
   created_at: string;
 };
+
+export type PaginationProps = {
+  currentPage: number;
+  totalItems: number;
+  itemsPerPage: number;
+  onPageChange: (page: number) => void;
+};

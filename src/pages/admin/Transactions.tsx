@@ -19,18 +19,40 @@ const Transactions = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
   
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const itemsPerPage = 10;
+  
   useEffect(() => {
     fetchBookings();
-  }, []);
+  }, [currentPage]);
   
   const fetchBookings = async () => {
     setLoading(true);
     try {
-      // First get bookings
+      // First count total bookings for pagination
+      const { count: totalCount, error: countError } = await supabase
+        .from('bookings')
+        .select('*', { count: 'exact', head: true });
+        
+      if (countError) {
+        throw countError;
+      }
+      
+      if (totalCount !== null) {
+        setTotalItems(totalCount);
+      }
+      
+      // Then get paginated bookings
+      const from = (currentPage - 1) * itemsPerPage;
+      const to = from + itemsPerPage - 1;
+      
       const { data: bookingsData, error: bookingsError } = await supabase
         .from('bookings')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .range(from, to);
         
       if (bookingsError) {
         throw bookingsError;
@@ -96,6 +118,10 @@ const Transactions = () => {
       });
     }
   };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
   
   const filteredBookings = bookings.filter(booking => 
     (booking.booking_number.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -134,6 +160,10 @@ const Transactions = () => {
           bookings={filteredBookings}
           loading={loading}
           onViewDetails={viewBookingDetails}
+          currentPage={currentPage}
+          totalItems={totalItems}
+          itemsPerPage={itemsPerPage}
+          onPageChange={handlePageChange}
         />
       </div>
       
