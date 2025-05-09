@@ -102,6 +102,10 @@ const FeaturedDestinations = () => {
     navigate('/destinasi');
   };
 
+  const handleDestinationClick = (slug) => {
+    navigate(`/destinasi/${slug}`);
+  };
+
   return (
     <section id="featured-destinations" className="py-12 bg-gray-50">
       <div className="container-custom">
@@ -132,7 +136,7 @@ const FeaturedDestinations = () => {
             <DestinationCard 
               key={destination.id} 
               {...destination} 
-              onClick={() => navigate(`/destinasi/${destination.slug}`)}
+              onClick={() => handleDestinationClick(destination.slug || destination.id)}
             />
           ))}
         </div>

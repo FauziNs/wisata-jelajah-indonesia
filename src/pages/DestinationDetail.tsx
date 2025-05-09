@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
@@ -60,6 +59,7 @@ const DestinationDetail = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
+      console.log("Fetching destination with ID:", id);
 
       const { data: destinationData, error: destinationError } = await supabase
         .from('destinations')
@@ -67,7 +67,12 @@ const DestinationDetail = () => {
         .eq('id', id)
         .single();
 
-      if (destinationError) throw destinationError;
+      if (destinationError) {
+        console.error("Error fetching destination:", destinationError);
+        throw destinationError;
+      }
+      
+      console.log("Destination data:", destinationData);
       setDestination(destinationData);
 
       const { data: ticketData, error: ticketError } = await supabase
@@ -75,7 +80,12 @@ const DestinationDetail = () => {
         .select('*')
         .eq('destination_id', id);
 
-      if (ticketError) throw ticketError;
+      if (ticketError) {
+        console.error("Error fetching tickets:", ticketError);
+        throw ticketError;
+      }
+      
+      console.log("Ticket data:", ticketData);
       setTicketTypes(ticketData);
     } catch (error) {
       console.error('Error fetching destination details:', error);
@@ -212,164 +222,171 @@ const DestinationDetail = () => {
       <Navbar />
 
       <div className="container-custom py-8 flex-grow">
-        <div className="relative">
-          <img
-            src={destination.image_url}
-            alt={destination.name}
-            className="w-full rounded-lg aspect-video object-cover mb-4"
-          />
-          <Button
-            variant="secondary"
-            className="absolute top-2 right-2"
-            onClick={toggleSaveDestination}
-          >
-            {isSaved ? (
-              <>
-                <Heart className="mr-2 h-4 w-4 fill-red-500 text-red-500" />
-                Disimpan
-              </>
-            ) : (
-              <>
-                <Heart className="mr-2 h-4 w-4" />
-                Simpan
-              </>
-            )}
-          </Button>
-        </div>
-
-        <h1 className="text-3xl font-bold mb-2">{destination.name}</h1>
-        <div className="flex items-center text-gray-600 mb-4">
-          <MapPin className="mr-2 h-4 w-4" />
-          {destination.location}
-        </div>
-
-        <div className="flex items-center mb-4">
-          <Star className="mr-2 h-4 w-4 text-yellow-500" />
-          <span className="font-medium">{destination.rating || 0}</span>
-          <span className="text-gray-500">({destination.reviews_count || 0} ulasan)</span>
-        </div>
-
-        <Tabs defaultValue="informasi" className="w-full mb-6">
-          <TabsList>
-            <TabsTrigger value="informasi">
-              <Info className="mr-2 h-4 w-4" />
-              Informasi
-            </TabsTrigger>
-            <TabsTrigger value="tiket">
-              <Ticket className="mr-2 h-4 w-4" />
-              Tiket
-            </TabsTrigger>
-            <TabsTrigger value="ulasan">
-              <Star className="mr-2 h-4 w-4" />
-              Ulasan
-            </TabsTrigger>
-          </TabsList>
-          <TabsContent value="informasi" className="space-y-4">
-            <Card>
-              <div className="p-6">
-                <h3 className="text-xl font-semibold mb-4">Deskripsi</h3>
-                <p className="text-gray-700">{destination.description}</p>
-              </div>
-            </Card>
-
-            <Card>
-              <div className="p-6">
-                <h3 className="text-xl font-semibold mb-4">Fasilitas</h3>
-                <p className="text-gray-700">{destination.amenities || 'Tidak ada informasi fasilitas'}</p>
-              </div>
-            </Card>
-
-            <Card>
-              <div className="p-6">
-                <h3 className="text-xl font-semibold mb-4">Jam Buka</h3>
-                <div className="flex items-center text-gray-700 mb-2">
-                  <Clock className="mr-2 h-4 w-4" />
-                  {destination.operational_hours || 'Tidak ada informasi jam buka'}
-                </div>
-                <div className="flex items-center text-gray-700">
-                  <Calendar className="mr-2 h-4 w-4" />
-                  {destination.best_time_to_visit || 'Tidak ada informasi waktu terbaik untuk mengunjungi'}
-                </div>
-              </div>
-            </Card>
-
-            <Card>
-              <div className="p-6">
-                <h3 className="text-xl font-semibold mb-4">Lokasi</h3>
-                <div className="flex items-center text-gray-700">
-                  <MapPin className="mr-2 h-4 w-4" />
-                  {destination.address || 'Tidak ada informasi alamat'}
-                </div>
-                {destination.google_maps_url && (
-                  <a
-                    href={destination.google_maps_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-500 hover:underline flex items-center mt-2"
-                  >
-                    <ExternalLink className="mr-2 h-4 w-4" />
-                    Lihat di Google Maps
-                  </a>
+        {destination && (
+          <>
+            <div className="relative">
+              <img
+                src={destination.image_url}
+                alt={destination.name}
+                className="w-full rounded-lg aspect-video object-cover mb-4"
+              />
+              <Button
+                variant="secondary"
+                className="absolute top-2 right-2"
+                onClick={toggleSaveDestination}
+              >
+                {isSaved ? (
+                  <>
+                    <Heart className="mr-2 h-4 w-4 fill-red-500 text-red-500" />
+                    Disimpan
+                  </>
+                ) : (
+                  <>
+                    <Heart className="mr-2 h-4 w-4" />
+                    Simpan
+                  </>
                 )}
-              </div>
-            </Card>
-          </TabsContent>
+              </Button>
+            </div>
 
-          <TabsContent value="tiket" className="space-y-4">
-            {ticketTypes.length > 0 ? (
-              <Accordion type="single" collapsible>
-                {ticketTypes.map((ticket) => (
-                  <AccordionItem key={ticket.id} value={ticket.id.toString()}>
-                    <AccordionTrigger>
-                      <div className="flex justify-between w-full">
-                        <div className="flex items-center">
-                          <Ticket className="mr-2 h-4 w-4" />
-                          {ticket.name}
-                        </div>
-                        <div className="font-medium">
-                          <DollarSign className="mr-2 h-4 w-4 inline-block" />
-                          {ticket.price.toLocaleString('id-ID')}
-                        </div>
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent>
-                      <div className="py-4">
-                        <p className="text-gray-700 mb-2">{ticket.description}</p>
-                        <div className="flex items-center text-gray-700 mb-2">
-                          <User className="mr-2 h-4 w-4" />
-                          Kapasitas: {ticket.capacity || 'Tidak terbatas'} orang
-                        </div>
-                        <div className="flex items-center text-gray-700 mb-2">
-                          <CheckCircle className="mr-2 h-4 w-4" />
-                          Validitas: {ticket.validity_duration || '1'} hari
-                        </div>
-                        <Button onClick={() => navigate(`/booking/${id}?ticket_type=${ticket.id}`)}>
-                          Pesan Sekarang
-                        </Button>
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                ))}
-              </Accordion>
-            ) : (
-              <Card>
-                <div className="p-6">
-                  <h3 className="text-xl font-semibold mb-4">Tiket</h3>
-                  <p className="text-gray-700">Tidak ada tiket tersedia untuk destinasi ini.</p>
-                </div>
-              </Card>
-            )}
-          </TabsContent>
+            <h1 className="text-3xl font-bold mb-2">{destination.name}</h1>
+            <div className="flex items-center text-gray-600 mb-4">
+              <MapPin className="mr-2 h-4 w-4" />
+              {destination.location}
+            </div>
 
-          <TabsContent value="ulasan">
-            <Card>
-              <div className="p-6">
-                <h3 className="text-xl font-semibold mb-4">Ulasan</h3>
-                <p className="text-gray-700">Belum ada ulasan untuk destinasi ini.</p>
-              </div>
-            </Card>
-          </TabsContent>
-        </Tabs>
+            <div className="flex items-center mb-4">
+              <Star className="mr-2 h-4 w-4 text-yellow-500" />
+              <span className="font-medium">{destination.rating || 0}</span>
+              <span className="text-gray-500 ml-1">({destination.reviews_count || 0} ulasan)</span>
+            </div>
+
+            <Tabs defaultValue="informasi" className="w-full mb-6">
+              <TabsList>
+                <TabsTrigger value="informasi">
+                  <Info className="mr-2 h-4 w-4" />
+                  Informasi
+                </TabsTrigger>
+                <TabsTrigger value="tiket">
+                  <Ticket className="mr-2 h-4 w-4" />
+                  Tiket
+                </TabsTrigger>
+                <TabsTrigger value="ulasan">
+                  <Star className="mr-2 h-4 w-4" />
+                  Ulasan
+                </TabsTrigger>
+              </TabsList>
+              <TabsContent value="informasi" className="space-y-4">
+                <Card>
+                  <div className="p-6">
+                    <h3 className="text-xl font-semibold mb-4">Deskripsi</h3>
+                    <p className="text-gray-700">{destination.description}</p>
+                  </div>
+                </Card>
+
+                <Card>
+                  <div className="p-6">
+                    <h3 className="text-xl font-semibold mb-4">Fasilitas</h3>
+                    <p className="text-gray-700">{destination.amenities || 'Tidak ada informasi fasilitas'}</p>
+                  </div>
+                </Card>
+
+                <Card>
+                  <div className="p-6">
+                    <h3 className="text-xl font-semibold mb-4">Jam Buka</h3>
+                    <div className="flex items-center text-gray-700 mb-2">
+                      <Clock className="mr-2 h-4 w-4" />
+                      {destination.operational_hours || 'Tidak ada informasi jam buka'}
+                    </div>
+                    <div className="flex items-center text-gray-700">
+                      <Calendar className="mr-2 h-4 w-4" />
+                      {destination.best_time_to_visit || 'Tidak ada informasi waktu terbaik untuk mengunjungi'}
+                    </div>
+                  </div>
+                </Card>
+
+                <Card>
+                  <div className="p-6">
+                    <h3 className="text-xl font-semibold mb-4">Lokasi</h3>
+                    <div className="flex items-center text-gray-700">
+                      <MapPin className="mr-2 h-4 w-4" />
+                      {destination.address || 'Tidak ada informasi alamat'}
+                    </div>
+                    {destination.google_maps_url && (
+                      <a
+                        href={destination.google_maps_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-500 hover:underline flex items-center mt-2"
+                      >
+                        <ExternalLink className="mr-2 h-4 w-4" />
+                        Lihat di Google Maps
+                      </a>
+                    )}
+                  </div>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="tiket" className="space-y-4">
+                {ticketTypes.length > 0 ? (
+                  <Accordion type="single" collapsible>
+                    {ticketTypes.map((ticket) => (
+                      <AccordionItem key={ticket.id} value={ticket.id.toString()}>
+                        <AccordionTrigger>
+                          <div className="flex justify-between w-full">
+                            <div className="flex items-center">
+                              <Ticket className="mr-2 h-4 w-4" />
+                              {ticket.name}
+                            </div>
+                            <div className="font-medium">
+                              <DollarSign className="mr-2 h-4 w-4 inline-block" />
+                              Rp {ticket.price.toLocaleString('id-ID')}
+                            </div>
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          <div className="py-4">
+                            <p className="text-gray-700 mb-2">{ticket.description}</p>
+                            <div className="flex items-center text-gray-700 mb-2">
+                              <User className="mr-2 h-4 w-4" />
+                              Kapasitas: {ticket.capacity || 'Tidak terbatas'} orang
+                            </div>
+                            <div className="flex items-center text-gray-700 mb-2">
+                              <CheckCircle className="mr-2 h-4 w-4" />
+                              Validitas: {ticket.validity_duration || '1'} hari
+                            </div>
+                            <Button 
+                              onClick={() => navigate(`/booking/${destination.id}?ticket_type=${ticket.id}`)}
+                              className="bg-primary hover:bg-primary/90"
+                            >
+                              Pesan Sekarang
+                            </Button>
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    ))}
+                  </Accordion>
+                ) : (
+                  <Card>
+                    <div className="p-6">
+                      <h3 className="text-xl font-semibold mb-4">Tiket</h3>
+                      <p className="text-gray-700">Tidak ada tiket tersedia untuk destinasi ini.</p>
+                    </div>
+                  </Card>
+                )}
+              </TabsContent>
+
+              <TabsContent value="ulasan">
+                <Card>
+                  <div className="p-6">
+                    <h3 className="text-xl font-semibold mb-4">Ulasan</h3>
+                    <p className="text-gray-700">Belum ada ulasan untuk destinasi ini.</p>
+                  </div>
+                </Card>
+              </TabsContent>
+            </Tabs>
+          </>
+        )}
       </div>
 
       <Footer />

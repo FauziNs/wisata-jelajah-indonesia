@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { Star, MapPin } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 
 interface DestinationCardProps {
   id: number;
@@ -23,16 +23,28 @@ const DestinationCard = ({
   rating,
   price,
   category,
+  slug,
   onClick
 }: DestinationCardProps) => {
   const [isHovered, setIsHovered] = useState(false);
+  const navigate = useNavigate();
+
+  const handleClick = () => {
+    if (onClick) {
+      onClick();
+    } else if (slug) {
+      navigate(`/destinasi/${slug}`);
+    } else {
+      navigate(`/destinasi/${id}`);
+    }
+  };
 
   return (
     <div
       className="bg-white rounded-lg shadow-md overflow-hidden transition-all duration-300 hover:shadow-lg cursor-pointer"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      onClick={onClick}
+      onClick={handleClick}
     >
       {/* Image Container */}
       <div className="relative h-48 overflow-hidden">
@@ -79,7 +91,13 @@ const DestinationCard = ({
             <p className="text-xs text-gray-500">Mulai dari</p>
             <p className="font-semibold text-primary">{price}</p>
           </div>
-          <button className="bg-secondary hover:bg-secondary/90 text-white text-sm py-1.5 px-3 rounded transition-colors">
+          <button 
+            className="bg-secondary hover:bg-secondary/90 text-white text-sm py-1.5 px-3 rounded transition-colors"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleClick();
+            }}
+          >
             Lihat Detail
           </button>
         </div>
