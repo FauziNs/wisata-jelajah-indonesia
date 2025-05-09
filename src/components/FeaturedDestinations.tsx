@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -102,7 +101,7 @@ const FeaturedDestinations = () => {
     navigate('/destinasi');
   };
 
-  const handleDestinationClick = (slug) => {
+  const handleDestinationClick = (slug: string | number) => {
     navigate(`/destinasi/${slug}`);
   };
 
@@ -136,7 +135,6 @@ const FeaturedDestinations = () => {
             <DestinationCard 
               key={destination.id} 
               {...destination} 
-              onClick={() => handleDestinationClick(destination.slug || destination.id)}
             />
           ))}
         </div>

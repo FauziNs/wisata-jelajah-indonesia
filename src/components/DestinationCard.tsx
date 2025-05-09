@@ -39,6 +39,11 @@ const DestinationCard = ({
     }
   };
 
+  const handleDetailClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent the card's onClick from firing
+    handleClick();
+  };
+
   return (
     <div
       className="bg-white rounded-lg shadow-md overflow-hidden transition-all duration-300 hover:shadow-lg cursor-pointer"
@@ -93,10 +98,7 @@ const DestinationCard = ({
           </div>
           <button 
             className="bg-secondary hover:bg-secondary/90 text-white text-sm py-1.5 px-3 rounded transition-colors"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleClick();
-            }}
+            onClick={handleDetailClick}
           >
             Lihat Detail
           </button>
