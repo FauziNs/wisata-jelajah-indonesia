@@ -1,5 +1,6 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import SearchBar from '@/components/SearchBar';
@@ -7,7 +8,11 @@ import DestinationCard from '@/components/DestinationCard';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Map, Grid, SlidersHorizontal, Mountain, Palmtree, Building, Utensils, Ticket } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
+// Fallback dummy destinations will be used if Supabase fetch fails
 const dummyDestinations = [
   {
     id: 1,
@@ -77,10 +82,65 @@ const categories = [
 const Destinations = () => {
   const [activeCategory, setActiveCategory] = useState('all');
   const [viewType, setViewType] = useState('grid');
+  const [destinations, setDestinations] = useState(dummyDestinations);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    // Fetch destinations from Supabase
+    const fetchDestinations = async () => {
+      setLoading(true);
+      try {
+        const { data, error } = await supabase.from('destinations').select('*');
+        
+        if (error) {
+          console.error('Error fetching destinations:', error);
+          setDestinations(dummyDestinations);
+        } else if (data && data.length > 0) {
+          const formattedDestinations = data.map(dest => ({
+            id: dest.id,
+            name: dest.name,
+            location: dest.location,
+            image: dest.image_url || 'https://images.unsplash.com/photo-1537996194471-e657df975ab4',
+            rating: dest.rating || 4.5,
+            price: `Rp ${typeof dest.price === 'number' ? dest.price.toLocaleString('id-ID') : '50.000'}`,
+            category: dest.category || 'Wisata Alam',
+            slug: dest.slug || dest.id
+          }));
+          setDestinations(formattedDestinations);
+        } else {
+          setDestinations(dummyDestinations);
+        }
+      } catch (error) {
+        console.error('Error fetching destinations:', error);
+        setDestinations(dummyDestinations);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDestinations();
+  }, []);
+
+  const handleDestinationClick = (id: number) => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Login Diperlukan",
+        description: "Silakan login terlebih dahulu untuk melihat detail destinasi",
+        variant: "default"
+      });
+      navigate('/login', { state: { from: `/destinasi/${id}` } });
+      return;
+    }
+    
+    navigate(`/destinasi/${id}`);
+  };
 
   const filteredDestinations = activeCategory === 'all' 
-    ? dummyDestinations 
-    : dummyDestinations.filter(dest => 
+    ? destinations 
+    : destinations.filter(dest => 
         dest.category.toLowerCase() === activeCategory.toLowerCase()
       );
 
@@ -141,8 +201,15 @@ const Destinations = () => {
           </div>
         </div>
         
+        {/* Loading state */}
+        {loading && (
+          <div className="flex justify-center py-20">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          </div>
+        )}
+        
         {/* Destination Results */}
-        {viewType === 'grid' ? (
+        {!loading && viewType === 'grid' && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredDestinations.map((destination) => (
               <DestinationCard
@@ -151,7 +218,9 @@ const Destinations = () => {
               />
             ))}
           </div>
-        ) : (
+        )}
+        
+        {!loading && viewType === 'map' && (
           <div className="bg-gray-100 rounded-lg p-8 text-center min-h-[500px] flex items-center justify-center">
             <div>
               <Map className="h-16 w-16 mx-auto text-gray-400 mb-4" />
@@ -162,7 +231,7 @@ const Destinations = () => {
         )}
         
         {/* No results state */}
-        {filteredDestinations.length === 0 && (
+        {!loading && filteredDestinations.length === 0 && (
           <div className="text-center py-12">
             <p className="text-lg text-gray-500">Tidak ada hasil yang ditemukan</p>
             <Button 
@@ -176,15 +245,17 @@ const Destinations = () => {
         )}
         
         {/* Pagination - Simple version */}
-        <div className="flex justify-center mt-12">
-          <div className="flex gap-2">
-            <Button variant="outline" disabled>Sebelumnya</Button>
-            <Button variant="outline" className="bg-primary/10">1</Button>
-            <Button variant="outline">2</Button>
-            <Button variant="outline">3</Button>
-            <Button variant="outline">Selanjutnya</Button>
+        {!loading && filteredDestinations.length > 0 && (
+          <div className="flex justify-center mt-12">
+            <div className="flex gap-2">
+              <Button variant="outline" disabled>Sebelumnya</Button>
+              <Button variant="outline" className="bg-primary/10">1</Button>
+              <Button variant="outline">2</Button>
+              <Button variant="outline">3</Button>
+              <Button variant="outline">Selanjutnya</Button>
+            </div>
           </div>
-        </div>
+        )}
       </div>
       
       <Footer />

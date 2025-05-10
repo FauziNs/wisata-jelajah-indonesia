@@ -16,6 +16,17 @@ export const useDestinationDetail = (id: string | undefined) => {
   const [isSaved, setIsSaved] = useState(false);
 
   useEffect(() => {
+    // Redirect to login if not authenticated
+    if (!isAuthenticated) {
+      toast({
+        title: "Login Diperlukan",
+        description: "Silakan login terlebih dahulu untuk melihat detail destinasi",
+        variant: "default"
+      });
+      navigate('/login', { state: { from: `/destinasi/${id}` } });
+      return;
+    }
+
     if (!id) {
       navigate('/destinasi');
       return;
@@ -190,11 +201,14 @@ export const useDestinationDetail = (id: string | undefined) => {
     }
 
     try {
+      // Ensure id is a string
+      const destinationId = typeof id === 'number' ? id.toString() : id;
+      
       const { data, error } = await supabase
         .from('saved_destinations')
         .select('id')
         .eq('user_id', user.id)
-        .eq('destination_id', id);
+        .eq('destination_id', destinationId);
 
       if (error) {
         console.error("Error checking saved status:", error);

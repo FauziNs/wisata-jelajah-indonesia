@@ -31,13 +31,25 @@ const SaveButton = ({
     }
 
     try {
+      if (!userId) {
+        toast({
+          title: "Error",
+          description: "User ID tidak ditemukan",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Ensure destinationId is always a string
+      const destId = typeof destinationId === 'number' ? destinationId.toString() : destinationId;
+
       if (isSaved) {
         // Find the saved record to delete
         const { data: savedData, error: findError } = await supabase
           .from('saved_destinations')
           .select('id')
           .eq('user_id', userId)
-          .eq('destination_id', destinationId);
+          .eq('destination_id', destId);
 
         if (findError) throw findError;
         
@@ -58,12 +70,12 @@ const SaveButton = ({
           });
         }
       } else {
-        // Insert new saved destination
+        // Insert new saved destination with string values
         const { error: insertError } = await supabase
           .from('saved_destinations')
           .insert({
             user_id: userId,
-            destination_id: destinationId
+            destination_id: destId
           });
 
         if (insertError) throw insertError;

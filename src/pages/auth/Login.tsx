@@ -14,9 +14,10 @@ const Login = () => {
   const location = useLocation();
   const { user } = useAuth();
 
-  // Get redirect path from URL params if it exists
+  // Get redirect path from location state or URL params
+  const from = location.state?.from || '/';
   const searchParams = new URLSearchParams(location.search);
-  const redirectTo = searchParams.get('redirect') || '/';
+  const redirectTo = searchParams.get('redirect') || from;
 
   useEffect(() => {
     // If user is already logged in, redirect them

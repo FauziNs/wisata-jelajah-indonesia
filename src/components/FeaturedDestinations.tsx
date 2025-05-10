@@ -1,8 +1,11 @@
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import DestinationCard from './DestinationCard';
+import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 const destinations = [
   {
@@ -92,6 +95,8 @@ const categories = ["Semua", "Wisata Alam", "Wisata Budaya", "Wisata Sejarah", "
 const FeaturedDestinations = () => {
   const [activeCategory, setActiveCategory] = useState("Semua");
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
+  const { toast } = useToast();
 
   const filteredDestinations = activeCategory === "Semua" 
     ? destinations 
@@ -102,6 +107,16 @@ const FeaturedDestinations = () => {
   };
 
   const handleDestinationClick = (slug: string | number) => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Login Diperlukan",
+        description: "Silakan login terlebih dahulu untuk melihat detail destinasi",
+        variant: "default"
+      });
+      navigate('/login', { state: { from: `/destinasi/${slug}` } });
+      return;
+    }
+    
     navigate(`/destinasi/${slug}`);
   };
 

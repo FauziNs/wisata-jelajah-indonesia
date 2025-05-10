@@ -2,6 +2,8 @@
 import { useState } from 'react';
 import { Star, MapPin } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 interface DestinationCardProps {
   id: number;
@@ -28,20 +30,35 @@ const DestinationCard = ({
 }: DestinationCardProps) => {
   const [isHovered, setIsHovered] = useState(false);
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
+  const { toast } = useToast();
 
   const handleClick = () => {
     if (onClick) {
       onClick();
-    } else if (slug) {
-      navigate(`/destinasi/${slug}`);
     } else {
-      navigate(`/destinasi/${id}`);
+      // Allow basic card click for all users
+      const destinationPath = slug ? `/destinasi/${slug}` : `/destinasi/${id}`;
+      navigate(destinationPath);
     }
   };
 
   const handleDetailClick = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent the card's onClick from firing
-    handleClick();
+    
+    if (!isAuthenticated) {
+      toast({
+        title: "Login Diperlukan",
+        description: "Silakan login terlebih dahulu untuk melihat detail destinasi",
+        variant: "default"
+      });
+      navigate('/login', { state: { from: slug ? `/destinasi/${slug}` : `/destinasi/${id}` } });
+      return;
+    }
+
+    // User is authenticated, navigate to destination detail
+    const destinationPath = slug ? `/destinasi/${slug}` : `/destinasi/${id}`;
+    navigate(destinationPath);
   };
 
   return (
