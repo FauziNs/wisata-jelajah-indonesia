@@ -39,6 +39,16 @@ BEGIN
   END;
 END $$;
 
+-- Add price field to destinations table if it doesn't exist
+DO $$ 
+BEGIN
+  BEGIN
+    ALTER TABLE public.destinations ADD COLUMN price NUMERIC DEFAULT 0;
+  EXCEPTION
+    WHEN duplicate_column THEN RAISE NOTICE 'column price already exists in public.destinations';
+  END;
+END $$;
+
 -- Create helper function to get saved destinations
 CREATE OR REPLACE FUNCTION public.get_saved_destinations(user_id_param UUID)
 RETURNS TABLE (
