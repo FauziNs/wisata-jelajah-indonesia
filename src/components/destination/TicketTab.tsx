@@ -11,15 +11,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { DollarSign, Ticket, User, CheckCircle, ShoppingCart } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-
-export interface TicketType {
-  id: string;
-  name: string;
-  price: number;
-  description?: string;
-  capacity?: string;
-  validity_duration?: string;
-}
+import { TicketType } from '@/types/destination';
 
 interface TicketTabProps {
   tickets: TicketType[];
