@@ -1,1 +1,20 @@
+
 project_id = "cslfiwjfivxsgopfpeti"
+
+[api]
+enabled = true
+
+[db]
+enabled = true
+
+[realtime]
+enabled = true
+
+[storage]
+enabled = true
+
+[functions]
+enabled = true
+
+[functions.create-checkout]
+verify_jwt = true

@@ -1,13 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import DestinationCard from './DestinationCard';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
-// Update the destinations array to match the updated DestinationCardProps
-const destinations = [
+// Fallback destinations if the database fetch fails
+const fallbackDestinations = [
   {
     id: 1,
     name: 'Pantai Kuta',
@@ -94,30 +95,60 @@ const categories = ["Semua", "Wisata Alam", "Wisata Budaya", "Wisata Sejarah", "
 
 const FeaturedDestinations = () => {
   const [activeCategory, setActiveCategory] = useState("Semua");
+  const [destinations, setDestinations] = useState([]);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
   const { toast } = useToast();
 
+  // Fetch destinations from Supabase
+  useEffect(() => {
+    const fetchDestinations = async () => {
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from('destinations')
+          .select('*')
+          .order('rating', { ascending: false })
+          .limit(8);
+        
+        if (error) {
+          console.error('Error fetching destinations:', error);
+          setDestinations(fallbackDestinations);
+        } else if (data && data.length > 0) {
+          // Transform the Supabase data to match our DestinationCard props
+          const formattedDestinations = data.map(dest => ({
+            id: dest.id,
+            name: dest.name,
+            location: dest.location,
+            image: dest.image_url || 'https://images.unsplash.com/photo-1537996194471-e657df975ab4',
+            rating: dest.rating || 4.5,
+            // Add default price since it's not in the Supabase schema
+            price: `Rp ${dest.rating ? Math.round(dest.rating * 25000).toLocaleString('id-ID') : '50.000'}`,
+            category: dest.category || 'Wisata Alam',
+            slug: dest.id // Use the ID as slug if not available
+          }));
+          setDestinations(formattedDestinations);
+        } else {
+          setDestinations(fallbackDestinations);
+        }
+      } catch (err) {
+        console.error('Error fetching destinations:', err);
+        setDestinations(fallbackDestinations);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDestinations();
+  }, []);
+    
   const filteredDestinations = activeCategory === "Semua" 
     ? destinations 
     : destinations.filter(dest => dest.category === activeCategory);
     
   const handleViewAllClick = () => {
     navigate('/destinasi');
-  };
-
-  const handleDestinationClick = (slug: string | number) => {
-    if (!isAuthenticated) {
-      toast({
-        title: "Login Diperlukan",
-        description: "Silakan login terlebih dahulu untuk melihat detail destinasi",
-        variant: "default"
-      });
-      navigate('/login', { state: { from: `/destinasi/${slug}` } });
-      return;
-    }
-    
-    navigate(`/destinasi/${slug}`);
   };
 
   return (
@@ -145,14 +176,35 @@ const FeaturedDestinations = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredDestinations.map((destination) => (
-            <DestinationCard 
-              key={destination.id} 
-              {...destination} 
-            />
-          ))}
-        </div>
+        {loading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {[...Array(4)].map((_, index) => (
+              <div key={index} className="bg-white rounded-lg shadow-md overflow-hidden h-80 animate-pulse">
+                <div className="bg-gray-300 h-48 w-full"></div>
+                <div className="p-4">
+                  <div className="h-4 bg-gray-300 rounded w-3/4 mb-2"></div>
+                  <div className="h-4 bg-gray-300 rounded w-1/2 mb-4"></div>
+                  <div className="h-4 bg-gray-300 rounded w-full"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {filteredDestinations.length > 0 ? (
+              filteredDestinations.map((destination) => (
+                <DestinationCard 
+                  key={destination.id} 
+                  {...destination} 
+                />
+              ))
+            ) : (
+              <div className="col-span-full text-center py-12">
+                <p className="text-gray-500">Tidak ada destinasi ditemukan untuk kategori ini</p>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="mt-10 text-center">
           <Button 

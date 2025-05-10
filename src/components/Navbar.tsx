@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { NavLink, Link, useNavigate } from 'react-router-dom';
 import { Menu, X, User, Search as SearchIcon, LogOut, Settings } from 'lucide-react';
@@ -140,6 +141,7 @@ const Navbar = () => {
           
           {isAuthenticated ? (
             <div className="relative group">
+              {/* Increased hover time by using delay-300 on the hidden class */}
               <Button 
                 variant="outline" 
                 className="flex items-center gap-2"
@@ -147,7 +149,9 @@ const Navbar = () => {
                 <User className="h-4 w-4" />
                 <span>Akun Saya</span>
               </Button>
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10 hidden group-hover:block">
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10 hidden 
+                    group-hover:block hover:block transition-all duration-300"
+                   style={{ transitionDelay: '200ms' }}> {/* Added delay to keep the menu visible longer */}
                 <Link 
                   to="/profile" 
                   className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
