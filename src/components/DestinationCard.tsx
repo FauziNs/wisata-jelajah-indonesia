@@ -6,7 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
 interface DestinationCardProps {
-  id: number | string;  // Allow both number and string IDs
+  id: string | number;  // Allow both string and number IDs
   name: string;
   location: string;
   image: string;

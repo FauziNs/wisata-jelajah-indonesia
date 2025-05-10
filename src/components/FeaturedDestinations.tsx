@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -7,10 +8,22 @@ import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
+// Define the destination type for better type checking
+interface Destination {
+  id: string | number;
+  name: string;
+  location: string;
+  image: string;
+  rating: number;
+  price: string;
+  category: string;
+  slug?: string;
+}
+
 // Fallback destinations if the database fetch fails
-const fallbackDestinations = [
+const fallbackDestinations: Destination[] = [
   {
-    id: 1,
+    id: "1",
     name: 'Pantai Kuta',
     location: 'Bali',
     image: 'https://images.unsplash.com/photo-1539367628448-4bc5c9d171c8?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
@@ -20,7 +33,7 @@ const fallbackDestinations = [
     slug: 'pantai-kuta'
   },
   {
-    id: 2,
+    id: "2",
     name: 'Candi Borobudur',
     location: 'Magelang, Jawa Tengah',
     image: 'https://images.unsplash.com/photo-1596402184320-417e7178b2cd?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
@@ -30,7 +43,7 @@ const fallbackDestinations = [
     slug: 'candi-borobudur'
   },
   {
-    id: 3,
+    id: "3",
     name: 'Raja Ampat',
     location: 'Papua Barat',
     image: 'https://images.unsplash.com/photo-1516690561799-46d8f74f9abf?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
@@ -40,7 +53,7 @@ const fallbackDestinations = [
     slug: 'raja-ampat'
   },
   {
-    id: 4,
+    id: "4",
     name: 'Gunung Bromo',
     location: 'Jawa Timur',
     image: 'https://images.unsplash.com/photo-1589311836499-19570037e9ed?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
@@ -50,7 +63,7 @@ const fallbackDestinations = [
     slug: 'gunung-bromo'
   },
   {
-    id: 5,
+    id: "5",
     name: 'Taman Mini Indonesia Indah',
     location: 'Jakarta',
     image: 'https://images.unsplash.com/photo-1584810359583-96fc3448beaa?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
@@ -60,7 +73,7 @@ const fallbackDestinations = [
     slug: 'taman-mini-indonesia-indah'
   },
   {
-    id: 6,
+    id: "6",
     name: 'Kawah Putih',
     location: 'Bandung, Jawa Barat',
     image: 'https://images.unsplash.com/photo-1587135941948-670b381f08ce?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
@@ -70,7 +83,7 @@ const fallbackDestinations = [
     slug: 'kawah-putih'
   },
   {
-    id: 7,
+    id: "7",
     name: 'Malioboro',
     location: 'Yogyakarta',
     image: 'https://images.unsplash.com/photo-1584810359583-96fc3448beaa?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
@@ -80,7 +93,7 @@ const fallbackDestinations = [
     slug: 'malioboro'
   },
   {
-    id: 8,
+    id: "8",
     name: 'Taman Nasional Komodo',
     location: 'Nusa Tenggara Timur',
     image: 'https://images.unsplash.com/photo-1518709766631-a6a7f45921c3?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
@@ -95,7 +108,7 @@ const categories = ["Semua", "Wisata Alam", "Wisata Budaya", "Wisata Sejarah", "
 
 const FeaturedDestinations = () => {
   const [activeCategory, setActiveCategory] = useState("Semua");
-  const [destinations, setDestinations] = useState([]);
+  const [destinations, setDestinations] = useState<Destination[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
@@ -117,16 +130,16 @@ const FeaturedDestinations = () => {
           setDestinations(fallbackDestinations);
         } else if (data && data.length > 0) {
           // Transform the Supabase data to match our DestinationCard props
-          const formattedDestinations = data.map(dest => ({
+          const formattedDestinations: Destination[] = data.map(dest => ({
             id: dest.id,
             name: dest.name,
             location: dest.location,
             image: dest.image_url || 'https://images.unsplash.com/photo-1537996194471-e657df975ab4',
             rating: dest.rating || 4.5,
-            // Add default price since it's not in the Supabase schema
+            // Calculate a price based on rating
             price: `Rp ${dest.rating ? Math.round(dest.rating * 25000).toLocaleString('id-ID') : '50.000'}`,
             category: dest.category || 'Wisata Alam',
-            slug: dest.id // Use the ID as slug if not available
+            slug: dest.id.toString() // Use the ID as slug if not available
           }));
           setDestinations(formattedDestinations);
         } else {

@@ -201,7 +201,7 @@ export const useDestinationDetail = (id: string | undefined) => {
     }
 
     try {
-      // Fix for the toString error - use ID directly
+      // Use ID directly without toString()
       const destinationId = id;
       
       const { data, error } = await supabase
