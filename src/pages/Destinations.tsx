@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
@@ -12,8 +11,20 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
+// Updated interface to match the Supabase destinations table structure
+interface Destination {
+  id: number | string;  // Allow both number and string to handle both Supabase and dummy data
+  name: string;
+  location: string;
+  image: string;
+  rating: number;
+  price: string;
+  category: string;
+  slug?: string;
+}
+
 // Fallback dummy destinations will be used if Supabase fetch fails
-const dummyDestinations = [
+const dummyDestinations: Destination[] = [
   {
     id: 1,
     name: 'Pantai Kuta',
@@ -82,7 +93,7 @@ const categories = [
 const Destinations = () => {
   const [activeCategory, setActiveCategory] = useState('all');
   const [viewType, setViewType] = useState('grid');
-  const [destinations, setDestinations] = useState(dummyDestinations);
+  const [destinations, setDestinations] = useState<Destination[]>(dummyDestinations);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
@@ -99,15 +110,17 @@ const Destinations = () => {
           console.error('Error fetching destinations:', error);
           setDestinations(dummyDestinations);
         } else if (data && data.length > 0) {
-          const formattedDestinations = data.map(dest => ({
+          // Transform the Supabase data to match our Destination interface
+          const formattedDestinations: Destination[] = data.map(dest => ({
             id: dest.id,
             name: dest.name,
             location: dest.location,
             image: dest.image_url || 'https://images.unsplash.com/photo-1537996194471-e657df975ab4',
             rating: dest.rating || 4.5,
-            price: `Rp ${typeof dest.price === 'number' ? dest.price.toLocaleString('id-ID') : '50.000'}`,
+            // Add default price since it's not in the Supabase schema
+            price: `Rp ${dest.rating ? (dest.rating * 50000).toLocaleString('id-ID') : '50.000'}`,
             category: dest.category || 'Wisata Alam',
-            slug: dest.slug || dest.id
+            slug: dest.id // Use the ID as slug if not available
           }));
           setDestinations(formattedDestinations);
         } else {
@@ -124,7 +137,7 @@ const Destinations = () => {
     fetchDestinations();
   }, []);
 
-  const handleDestinationClick = (id: number) => {
+  const handleDestinationClick = (id: number | string) => {
     if (!isAuthenticated) {
       toast({
         title: "Login Diperlukan",

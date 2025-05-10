@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -7,6 +6,7 @@ import DestinationCard from './DestinationCard';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
+// Update the destinations array to match the updated DestinationCardProps
 const destinations = [
   {
     id: 1,

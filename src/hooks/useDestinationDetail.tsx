@@ -201,8 +201,8 @@ export const useDestinationDetail = (id: string | undefined) => {
     }
 
     try {
-      // Ensure id is a string
-      const destinationId = typeof id === 'number' ? id.toString() : id;
+      // Ensure id is a string - fix for the toString error
+      const destinationId = id;
       
       const { data, error } = await supabase
         .from('saved_destinations')
