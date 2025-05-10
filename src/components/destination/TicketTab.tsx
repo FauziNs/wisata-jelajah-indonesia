@@ -12,8 +12,17 @@ import { Button } from '@/components/ui/button';
 import { DollarSign, Ticket, User, CheckCircle, ShoppingCart } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
+interface TicketType {
+  id: string | number;
+  name: string;
+  price: number;
+  description?: string;
+  capacity?: string;
+  validity_duration?: string;
+}
+
 interface TicketTabProps {
-  tickets: any[];
+  tickets: TicketType[];
   destinationId: string | number;
   isAuthenticated: boolean;
 }
@@ -21,7 +30,7 @@ interface TicketTabProps {
 const TicketTab = ({ tickets, destinationId, isAuthenticated }: TicketTabProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [selectedTicket, setSelectedTicket] = useState(null);
+  const [selectedTicket, setSelectedTicket] = useState<TicketType | null>(null);
   const [quantity, setQuantity] = useState(1);
 
   const handleBookTicket = (ticketId: string | number) => {
@@ -38,7 +47,7 @@ const TicketTab = ({ tickets, destinationId, isAuthenticated }: TicketTabProps) 
     navigate(`/booking/${destinationId}?ticket_type=${ticketId}&quantity=${quantity}`);
   };
 
-  const handleTicketSelect = (ticket) => {
+  const handleTicketSelect = (ticket: TicketType) => {
     setSelectedTicket(ticket === selectedTicket ? null : ticket);
   };
 

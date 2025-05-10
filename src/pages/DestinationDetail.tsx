@@ -164,7 +164,7 @@ const DestinationDetail = () => {
 
       if (data) {
         console.log("Found destination:", data);
-        setDestination(data);
+        setDestination(data as DestinationType);
         
         // Fetch ticket types
         const { data: ticketData, error: ticketError } = await supabase
@@ -174,8 +174,8 @@ const DestinationDetail = () => {
 
         if (!ticketError && ticketData && ticketData.length > 0) {
           console.log("Found tickets:", ticketData);
-          setTicketTypes(ticketData);
-          setSelectedTicket(ticketData[0]); // Select first ticket by default
+          setTicketTypes(ticketData as TicketType[]);
+          setSelectedTicket(ticketData[0] as TicketType); // Select first ticket by default
         }
 
         // Check if destination is saved
@@ -261,12 +261,12 @@ const DestinationDetail = () => {
           .from('saved_destinations')
           .delete()
           .eq('user_id', user.id)
-          .eq('destination_id', destination.id);
+          .eq('destination_id', destination?.id);
           
         setIsSaved(false);
         toast({
           title: "Berhasil dihapus",
-          description: `${destination.name} telah dihapus dari destinasi tersimpan`,
+          description: `${destination?.name} telah dihapus dari destinasi tersimpan`,
         });
       } else {
         // Add to saved destinations
@@ -274,13 +274,13 @@ const DestinationDetail = () => {
           .from('saved_destinations')
           .insert({
             user_id: user.id,
-            destination_id: destination.id
+            destination_id: destination?.id
           });
           
         setIsSaved(true);
         toast({
           title: "Berhasil disimpan",
-          description: `${destination.name} telah ditambahkan ke destinasi tersimpan`,
+          description: `${destination?.name} telah ditambahkan ke destinasi tersimpan`,
         });
       }
     } catch (error) {
@@ -355,7 +355,7 @@ const DestinationDetail = () => {
       const { data: sessionData, error: sessionError } = await supabase.functions.invoke("create-checkout", {
         body: {
           destinationId: destination.id,
-          ticketTypeId: selectedTicket.id,
+          ticketTypeId: selectedTicket.id.toString(),
           quantity: quantity,
           visitDate: visitDate,
           visitorInfo: {
