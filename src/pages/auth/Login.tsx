@@ -1,18 +1,21 @@
 
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import LoginForm from '@/components/auth/LoginForm';
 import SocialLogin from '@/components/auth/SocialLogin';
+import AdminLoginForm from '@/components/auth/AdminLoginForm';
 
 const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState('customer');
 
   // Get redirect path from location state or URL params
   const from = location.state?.from || '/';
@@ -35,7 +38,7 @@ const Login = () => {
       .single();
       
     if (!error && data) {
-      if (data.role === 'admin' && redirectTo === '/') {
+      if (data.role === 'admin') {
         navigate('/admin');
       } else {
         navigate(redirectTo);
@@ -43,6 +46,10 @@ const Login = () => {
     } else {
       navigate(redirectTo);
     }
+  };
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
   };
 
   return (
@@ -60,8 +67,23 @@ const Login = () => {
             </CardHeader>
             
             <CardContent>
-              <LoginForm redirectTo={redirectTo} />
-              <SocialLogin />
+              <Tabs value={activeTab} onValueChange={handleTabChange} className="mb-6">
+                <TabsList className="grid grid-cols-2 w-full">
+                  <TabsTrigger value="customer">Customer</TabsTrigger>
+                  <TabsTrigger value="admin">Admin</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="customer">
+                  <LoginForm redirectTo={redirectTo} />
+                  <div className="mt-6">
+                    <SocialLogin />
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="admin">
+                  <AdminLoginForm />
+                </TabsContent>
+              </Tabs>
             </CardContent>
             
             <CardFooter className="justify-center">

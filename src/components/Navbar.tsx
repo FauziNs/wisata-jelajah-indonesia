@@ -1,17 +1,11 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { NavLink, Link, useNavigate } from 'react-router-dom';
 import { Menu, X, User, Search as SearchIcon, LogOut, Settings } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useAuth } from '@/context/AuthContext';
 import { signOut } from '@/integrations/supabase/auth';
 import { supabase } from '@/integrations/supabase/client';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import {
   Dialog,
   DialogContent,
@@ -27,7 +21,10 @@ const Navbar = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
+  const [showAccountMenu, setShowAccountMenu] = useState(false);
   const { user, isLoading, isAuthenticated } = useAuth();
+  const accountMenuRef = useRef(null);
+  const accountButtonRef = useRef(null);
   const navigate = useNavigate();
   const { toast } = useToast();
   
@@ -41,7 +38,6 @@ const Navbar = () => {
             .eq('id', user.id)
             .single();
 
-          // Check if profileData exists and has a role property using safe optional chaining
           if (profileData && profileData.role === 'admin') {
             setIsAdmin(true);
           } else {
@@ -58,6 +54,23 @@ const Navbar = () => {
 
     checkAdminRole();
   }, [isAuthenticated, user]);
+
+  // Add click outside handler to close the account menu
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (
+        accountMenuRef.current && 
+        !accountMenuRef.current.contains(event.target) &&
+        accountButtonRef.current &&
+        !accountButtonRef.current.contains(event.target)
+      ) {
+        setShowAccountMenu(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const toggleMenu = () => {
     setIsOpen(!isOpen);
@@ -103,6 +116,10 @@ const Navbar = () => {
     }
   };
 
+  const toggleAccountMenu = () => {
+    setShowAccountMenu(!showAccountMenu);
+  };
+
   return (
     <nav className="bg-white shadow-sm sticky top-0 z-50">
       <div className="container-custom flex items-center justify-between h-16">
@@ -140,52 +157,64 @@ const Navbar = () => {
           </Button>
           
           {isAuthenticated ? (
-            <div className="relative group">
-              {/* Increased hover time by using delay-300 on the hidden class */}
+            <div className="relative">
               <Button 
+                ref={accountButtonRef}
                 variant="outline" 
                 className="flex items-center gap-2"
+                onClick={toggleAccountMenu}
               >
                 <User className="h-4 w-4" />
                 <span>Akun Saya</span>
               </Button>
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10 hidden 
-                    group-hover:block hover:block transition-all duration-300"
-                   style={{ transitionDelay: '200ms' }}> {/* Added delay to keep the menu visible longer */}
-                <Link 
-                  to="/profile" 
-                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+              
+              {showAccountMenu && (
+                <div 
+                  ref={accountMenuRef}
+                  className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10"
                 >
-                  Profil Saya
-                </Link>
-                <Link 
-                  to="/bookings" 
-                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                >
-                  Pesanan Saya
-                </Link>
-                <Link 
-                  to="/saved" 
-                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                >
-                  Destinasi Tersimpan
-                </Link>
-                {isAdmin && (
                   <Link 
-                    to="/admin" 
+                    to="/profile" 
                     className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    onClick={() => setShowAccountMenu(false)}
                   >
-                    Admin Dashboard
+                    Profil Saya
                   </Link>
-                )}
-                <div className="border-t border-gray-100 my-1"></div>
-                <button 
-                  onClick={handleLogout}
-                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                >
-                  Logout
-                </button>
-              </div>
+                  <Link 
+                    to="/bookings" 
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    onClick={() => setShowAccountMenu(false)}
+                  >
+                    Pesanan Saya
+                  </Link>
+                  <Link 
+                    to="/saved" 
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    onClick={() => setShowAccountMenu(false)}
+                  >
+                    Destinasi Tersimpan
+                  </Link>
+                  {isAdmin && (
+                    <Link 
+                      to="/admin" 
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      onClick={() => setShowAccountMenu(false)}
+                    >
+                      Admin Dashboard
+                    </Link>
+                  )}
+                  <div className="border-t border-gray-100 my-1"></div>
+                  <button 
+                    onClick={() => {
+                      handleLogout();
+                      setShowAccountMenu(false);
+                    }}
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    Logout
+                  </button>
+                </div>
+              )}
             </div>
           ) : (
             <>

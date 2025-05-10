@@ -8,6 +8,12 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Helper logging function to debug Stripe integration
+const logStep = (step: string, details?: any) => {
+  const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
+  console.log(`[CREATE-CHECKOUT] ${step}${detailsStr}`);
+};
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -15,6 +21,8 @@ serve(async (req) => {
   }
 
   try {
+    logStep("Starting checkout process");
+    
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
     const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
@@ -28,6 +36,8 @@ serve(async (req) => {
       throw new Error("Missing Authorization header");
     }
     
+    logStep("Got authorization header");
+    
     // Get the token from the authorization header
     const token = authHeader.replace("Bearer ", "");
     
@@ -37,6 +47,8 @@ serve(async (req) => {
     
     const user = userData.user;
     if (!user) throw new Error("User not found");
+    
+    logStep("Authenticated user", { userId: user.id, email: user.email });
 
     // Parse the request body
     const { destinationId, ticketTypeId, quantity, visitDate, visitorInfo } = await req.json();
@@ -44,6 +56,8 @@ serve(async (req) => {
     if (!destinationId || !ticketTypeId || !quantity) {
       throw new Error("Missing required fields");
     }
+    
+    logStep("Parsed request body", { destinationId, ticketTypeId, quantity, visitDate });
 
     // Create a Supabase client with the service role key for database access
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey);
@@ -56,6 +70,7 @@ serve(async (req) => {
       .single();
     
     if (destError) throw new Error(`Error fetching destination: ${destError.message}`);
+    logStep("Got destination details", destination);
     
     const { data: ticketType, error: ticketError } = await supabaseAdmin
       .from("ticket_types")
@@ -64,6 +79,7 @@ serve(async (req) => {
       .single();
     
     if (ticketError) throw new Error(`Error fetching ticket type: ${ticketError.message}`);
+    logStep("Got ticket details", ticketType);
     
     // Calculate total price
     const unitPrice = ticketType.price;
@@ -93,12 +109,25 @@ serve(async (req) => {
       .select()
       .single();
     
-    if (bookingError) throw new Error(`Error creating booking: ${bookingError.message}`);
+    if (bookingError) {
+      logStep("Error creating booking", bookingError);
+      throw new Error(`Error creating booking: ${bookingError.message}`);
+    }
+    
+    logStep("Created booking", { bookingId: booking.id, bookingNumber });
 
     // Initialize Stripe with the secret key
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") ?? "", {
+    const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
+    if (!stripeSecretKey) {
+      throw new Error("STRIPE_SECRET_KEY environment variable not set");
+    }
+    
+    const stripe = new Stripe(stripeSecretKey, {
       apiVersion: "2023-10-16",
     });
+
+    const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
+    logStep("Webhook secret", { webhookSecretExists: !!webhookSecret });
 
     // Create a Stripe checkout session
     const session = await stripe.checkout.sessions.create({
@@ -128,11 +157,20 @@ serve(async (req) => {
       },
     });
 
+    logStep("Created Stripe checkout session", { 
+      sessionId: session.id, 
+      url: session.url ? "Session URL exists" : "No session URL"
+    });
+
     // Update the booking with the Stripe session ID
     await supabaseAdmin
       .from("bookings")
-      .update({ payment_method: "stripe" })
+      .update({ 
+        payment_method: "stripe",
+      })
       .eq("id", booking.id);
+
+    logStep("Updated booking with payment method");
 
     // Return the Stripe session URL to redirect the user to the payment page
     return new Response(
@@ -147,7 +185,8 @@ serve(async (req) => {
       }
     );
   } catch (error) {
-    console.error("Checkout error:", error);
+    logStep("Checkout error", error);
+    
     return new Response(
       JSON.stringify({ error: error.message }),
       {
