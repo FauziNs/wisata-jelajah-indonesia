@@ -12,10 +12,12 @@ import DestinationHeader from './DestinationHeader';
 import InformationTab from './InformationTab';
 import TicketTab from './TicketTab';
 import ReviewsTab from './ReviewsTab';
+import { DestinationType } from '@/types/destination';
+import { TicketType } from '@/types/destination';
 
 interface DestinationContentProps {
-  destination: any;
-  ticketTypes: any[];
+  destination: DestinationType;
+  ticketTypes: TicketType[];
   isSaved: boolean;
   setIsSaved: (saved: boolean) => void;
   userId?: string;

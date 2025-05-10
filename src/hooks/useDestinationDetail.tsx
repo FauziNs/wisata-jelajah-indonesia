@@ -4,14 +4,15 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
+import { DestinationType, TicketType } from '@/types/destination';
 
 export const useDestinationDetail = (id: string | undefined) => {
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth();
   const { toast } = useToast();
 
-  const [destination, setDestination] = useState(null);
-  const [ticketTypes, setTicketTypes] = useState([]);
+  const [destination, setDestination] = useState<DestinationType | null>(null);
+  const [ticketTypes, setTicketTypes] = useState<TicketType[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSaved, setIsSaved] = useState(false);
 
@@ -69,9 +70,9 @@ export const useDestinationDetail = (id: string | undefined) => {
         console.log("Using dummy data for destination");
         
         // Find destination in dummy data
-        const dummyDestinations = [
+        const dummyDestinations: DestinationType[] = [
           {
-            id: 1,
+            id: '1',
             name: 'Pantai Kuta',
             location: 'Bali',
             image_url: 'https://images.unsplash.com/photo-1539367628448-4bc5c9d171c8',
@@ -85,7 +86,7 @@ export const useDestinationDetail = (id: string | undefined) => {
             address: 'Jalan Pantai Kuta, Kuta, Badung, Bali'
           },
           {
-            id: 2,
+            id: '2',
             name: 'Candi Borobudur',
             location: 'Jawa Tengah',
             image_url: 'https://images.unsplash.com/photo-1596402184320-417e7178b2cd',
@@ -100,7 +101,7 @@ export const useDestinationDetail = (id: string | undefined) => {
           }
         ];
         
-        destinationData = dummyDestinations.find(dest => dest.id.toString() === id || dest.slug === id) ||
+        destinationData = dummyDestinations.find(dest => dest.id === id || dest.slug === id) ||
           dummyDestinations[0]; // Default to first destination if not found
       }
       
@@ -115,12 +116,12 @@ export const useDestinationDetail = (id: string | undefined) => {
             .eq('destination_id', id);
 
           if (!ticketError && ticketData) {
-            setTicketTypes(ticketData);
+            setTicketTypes(ticketData as TicketType[]);
           } else {
             console.log("Using dummy ticket data");
             setTicketTypes([
               {
-                id: 1,
+                id: '1',
                 name: 'Tiket Dewasa',
                 price: 50000,
                 description: 'Untuk pengunjung berusia 12 tahun ke atas',
@@ -128,7 +129,7 @@ export const useDestinationDetail = (id: string | undefined) => {
                 validity_duration: '1'
               },
               {
-                id: 2,
+                id: '2',
                 name: 'Tiket Anak-anak',
                 price: 25000,
                 description: 'Untuk pengunjung berusia 5-11 tahun',
@@ -142,7 +143,7 @@ export const useDestinationDetail = (id: string | undefined) => {
           // Fallback to dummy ticket data
           setTicketTypes([
             {
-              id: 1,
+              id: '1',
               name: 'Tiket Dewasa',
               price: 50000,
               description: 'Untuk pengunjung berusia 12 tahun ke atas',
@@ -150,7 +151,7 @@ export const useDestinationDetail = (id: string | undefined) => {
               validity_duration: '1'
             },
             {
-              id: 2,
+              id: '2',
               name: 'Tiket Anak-anak',
               price: 25000,
               description: 'Untuk pengunjung berusia 5-11 tahun',
@@ -163,7 +164,7 @@ export const useDestinationDetail = (id: string | undefined) => {
         // Use dummy ticket data if no Supabase
         setTicketTypes([
           {
-            id: 1,
+            id: '1',
             name: 'Tiket Dewasa',
             price: 50000,
             description: 'Untuk pengunjung berusia 12 tahun ke atas',
@@ -171,7 +172,7 @@ export const useDestinationDetail = (id: string | undefined) => {
             validity_duration: '1'
           },
           {
-            id: 2,
+            id: '2',
             name: 'Tiket Anak-anak',
             price: 25000,
             description: 'Untuk pengunjung berusia 5-11 tahun',
@@ -201,7 +202,6 @@ export const useDestinationDetail = (id: string | undefined) => {
     }
 
     try {
-      // Use ID directly without toString()
       const destinationId = id;
       
       const { data, error } = await supabase

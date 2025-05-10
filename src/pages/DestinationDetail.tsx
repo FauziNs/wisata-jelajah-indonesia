@@ -51,37 +51,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-
-// Define proper types to avoid infinite type instantiation
-interface DestinationType {
-  id: string;
-  name: string;
-  location: string;
-  image_url?: string;
-  price?: number | string;
-  description: string;
-  category?: string;
-  rating?: number;
-  operational_hours?: string;
-  amenities?: string;
-  address?: string;
-  slug?: string;
-  best_time_to_visit?: string;
-  google_maps_url?: string;
-  long_description?: string;
-  full_location?: string;
-  reviews_count?: number;
-}
-
-interface TicketType {
-  id: string;
-  name: string;
-  price: number;
-  description?: string;
-  capacity?: string;
-  validity_duration?: string;
-  destination_id?: string;
-}
+import { DestinationType, TicketType } from '@/types/destination';
 
 const DestinationDetail = () => {
   const { id, slug } = useParams<{ id?: string; slug?: string }>();
@@ -355,7 +325,7 @@ const DestinationDetail = () => {
       const { data: sessionData, error: sessionError } = await supabase.functions.invoke("create-checkout", {
         body: {
           destinationId: destination.id,
-          ticketTypeId: selectedTicket.id.toString(),
+          ticketTypeId: selectedTicket.id,
           quantity: quantity,
           visitDate: visitDate,
           visitorInfo: {

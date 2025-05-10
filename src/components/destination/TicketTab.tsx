@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { DollarSign, Ticket, User, CheckCircle, ShoppingCart } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
-interface TicketType {
+export interface TicketType {
   id: string;
   name: string;
   price: number;
@@ -23,7 +23,7 @@ interface TicketType {
 
 interface TicketTabProps {
   tickets: TicketType[];
-  destinationId: string | number;
+  destinationId: string;
   isAuthenticated: boolean;
 }
 
@@ -33,7 +33,7 @@ const TicketTab = ({ tickets, destinationId, isAuthenticated }: TicketTabProps) 
   const [selectedTicket, setSelectedTicket] = useState<TicketType | null>(null);
   const [quantity, setQuantity] = useState(1);
 
-  const handleBookTicket = (ticketId: string | number) => {
+  const handleBookTicket = (ticketId: string) => {
     if (!isAuthenticated) {
       toast({
         title: "Login Diperlukan",
