@@ -62,7 +62,7 @@ const HeroSection = () => {
             <Button size="lg" onClick={scrollToFeaturedDestinations} className="text-white font-medium px-8 bg-secondary-DEFAULT">
               Jelajahi Destinasi
             </Button>
-            <Button size="lg" variant="outline" onClick={handleRegisterClick} className="border-white px-8 text-slate-50 bg-blue-500 hover:bg-blue-400">
+            <Button size="lg" variant="outline" onClick={handleRegisterClick} className="text-white font-medium px-8 bg-secondary-DEFAULT">
               Daftar Sekarang
             </Button>
           </div>
