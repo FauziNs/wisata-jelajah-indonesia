@@ -74,7 +74,7 @@ interface DestinationType {
 }
 
 interface TicketType {
-  id: string | number;
+  id: string;
   name: string;
   price: number;
   description?: string;
@@ -211,7 +211,7 @@ const DestinationDetail = () => {
         // Set dummy ticket types
         const dummyTickets: TicketType[] = [
           {
-            id: 1,
+            id: '1',
             name: 'Tiket Dewasa',
             price: 50000,
             description: 'Untuk pengunjung berusia 12 tahun ke atas',
@@ -219,7 +219,7 @@ const DestinationDetail = () => {
             validity_duration: '1'
           },
           {
-            id: 2,
+            id: '2',
             name: 'Tiket Anak-anak',
             price: 25000,
             description: 'Untuk pengunjung berusia 5-11 tahun',

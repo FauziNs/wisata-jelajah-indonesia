@@ -13,7 +13,7 @@ import { DollarSign, Ticket, User, CheckCircle, ShoppingCart } from 'lucide-reac
 import { useToast } from '@/hooks/use-toast';
 
 interface TicketType {
-  id: string | number;
+  id: string;
   name: string;
   price: number;
   description?: string;
