@@ -1,4 +1,3 @@
-
 import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
@@ -53,17 +52,48 @@ import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+// Define proper types to avoid infinite type instantiation
+interface DestinationType {
+  id: string;
+  name: string;
+  location: string;
+  image_url?: string;
+  price?: number | string;
+  description: string;
+  category?: string;
+  rating?: number;
+  operational_hours?: string;
+  amenities?: string;
+  address?: string;
+  slug?: string;
+  best_time_to_visit?: string;
+  google_maps_url?: string;
+  long_description?: string;
+  full_location?: string;
+  reviews_count?: number;
+}
+
+interface TicketType {
+  id: string | number;
+  name: string;
+  price: number;
+  description?: string;
+  capacity?: string;
+  validity_duration?: string;
+  destination_id?: string;
+}
+
 const DestinationDetail = () => {
-  const { id, slug } = useParams();
+  const { id, slug } = useParams<{ id?: string; slug?: string }>();
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth();
   const { toast } = useToast();
   
-  const [destination, setDestination] = useState(null);
-  const [ticketTypes, setTicketTypes] = useState([]);
+  const [destination, setDestination] = useState<DestinationType | null>(null);
+  const [ticketTypes, setTicketTypes] = useState<TicketType[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSaved, setIsSaved] = useState(false);
-  const [selectedTicket, setSelectedTicket] = useState(null);
+  const [selectedTicket, setSelectedTicket] = useState<TicketType | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [visitDate, setVisitDate] = useState(getTomorrowDate());
   const [visitorName, setVisitorName] = useState('');
@@ -107,7 +137,7 @@ const DestinationDetail = () => {
     fetchDestinationData(identifier);
   }, [id, slug, isAuthenticated, user]);
 
-  const fetchDestinationData = async (identifier) => {
+  const fetchDestinationData = async (identifier: string) => {
     try {
       setLoading(true);
       console.log("Fetching destination with identifier:", identifier);
@@ -120,7 +150,7 @@ const DestinationDetail = () => {
         .maybeSingle();
       
       // If not found by ID, try to find by slug if the identifier could be a slug
-      if (!data && typeof identifier === 'string' && !error) {
+      if (!data && !error) {
         const { data: slugData, error: slugError } = await supabase
           .from('destinations')
           .select('*')
@@ -162,7 +192,7 @@ const DestinationDetail = () => {
       } else {
         console.log("Destination not found, using dummy data");
         // If no destination found, use dummy data
-        const dummyData = {
+        const dummyData: DestinationType = {
           id: identifier,
           name: 'Pantai Kuta',
           location: 'Bali',
@@ -179,7 +209,7 @@ const DestinationDetail = () => {
         setDestination(dummyData);
         
         // Set dummy ticket types
-        const dummyTickets = [
+        const dummyTickets: TicketType[] = [
           {
             id: 1,
             name: 'Tiket Dewasa',
@@ -263,7 +293,7 @@ const DestinationDetail = () => {
     }
   };
 
-  const handleTicketSelect = (ticket) => {
+  const handleTicketSelect = (ticket: TicketType) => {
     setSelectedTicket(ticket);
   };
 
@@ -318,6 +348,10 @@ const DestinationDetail = () => {
     setIsSubmitting(true);
 
     try {
+      if (!destination || !destination.id) {
+        throw new Error("Data destinasi tidak valid");
+      }
+      
       const { data: sessionData, error: sessionError } = await supabase.functions.invoke("create-checkout", {
         body: {
           destinationId: destination.id,
@@ -334,7 +368,8 @@ const DestinationDetail = () => {
       });
 
       if (sessionError) {
-        throw new Error(sessionError.message);
+        console.error("Session error:", sessionError);
+        throw new Error(sessionError.message || "Unknown error occurred");
       }
 
       if (sessionData && sessionData.sessionUrl) {
@@ -347,7 +382,7 @@ const DestinationDetail = () => {
       console.error("Error creating checkout session:", error);
       toast({
         title: "Error",
-        description: `Gagal membuat sesi pembayaran: ${error.message}`,
+        description: `Gagal membuat sesi pembayaran: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive"
       });
     } finally {
@@ -529,7 +564,7 @@ const DestinationDetail = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {ticketTypes && ticketTypes.length > 0 ? ticketTypes.map((ticket) => (
                     <Card 
-                      key={ticket.id}
+                      key={String(ticket.id)}
                       className={`cursor-pointer transition-colors ${selectedTicket && selectedTicket.id === ticket.id ? 'border-primary shadow-md' : 'border-gray-200'}`}
                       onClick={() => handleTicketSelect(ticket)}
                     >
@@ -610,7 +645,7 @@ const DestinationDetail = () => {
                         <SelectGroup>
                           <SelectLabel>Jenis Tiket</SelectLabel>
                           {ticketTypes.map((ticket) => (
-                            <SelectItem key={ticket.id} value={ticket.id.toString()}>
+                            <SelectItem key={String(ticket.id)} value={String(ticket.id)}>
                               {ticket.name} - Rp {ticket.price.toLocaleString('id-ID')}
                             </SelectItem>
                           ))}
