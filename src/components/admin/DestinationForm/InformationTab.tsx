@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Controller, useFormContext } from 'react-hook-form';
-import { MapPin } from 'lucide-react';
+import { MapPin, DollarSign } from 'lucide-react';
 
 // Indonesian provinces for dropdown
 const provinces = [
@@ -90,6 +90,32 @@ const InformationTab = () => {
           )}
         />
       </div>
+
+      <FormField
+        control={control}
+        name="price"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel className="flex items-center">
+              <DollarSign className="h-4 w-4 mr-1 text-primary" />
+              Harga Tiket Dasar <span className="text-destructive">*</span>
+            </FormLabel>
+            <FormControl>
+              <div className="relative">
+                <span className="absolute left-3 top-2.5">Rp</span>
+                <Input
+                  type="number"
+                  className="pl-10"
+                  placeholder="Masukkan harga tiket dasar"
+                  {...field}
+                />
+              </div>
+            </FormControl>
+            <p className="text-xs text-muted-foreground">Harga tiket dasar untuk masuk ke destinasi</p>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
 
       <FormField
         control={control}
@@ -240,9 +266,9 @@ const InformationTab = () => {
             name="city"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Kabupaten/Kota <span className="text-destructive">*</span></FormLabel>
+                <FormLabel>Kabupaten / Kota <span className="text-destructive">*</span></FormLabel>
                 <FormControl>
-                  <Input placeholder="Masukkan kabupaten/kota" {...field} />
+                  <Input placeholder="Masukkan nama kabupaten/kota" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -258,13 +284,13 @@ const InformationTab = () => {
               <FormItem>
                 <FormLabel>Kecamatan</FormLabel>
                 <FormControl>
-                  <Input placeholder="Masukkan kecamatan" {...field} />
+                  <Input placeholder="Masukkan nama kecamatan" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
-
+          
           <FormField
             control={control}
             name="fullAddress"
@@ -272,7 +298,7 @@ const InformationTab = () => {
               <FormItem>
                 <FormLabel>Alamat Lengkap</FormLabel>
                 <FormControl>
-                  <Textarea placeholder="Masukkan alamat lengkap" {...field} />
+                  <Input placeholder="Masukkan alamat lengkap" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -288,7 +314,7 @@ const InformationTab = () => {
               <FormItem>
                 <FormLabel>Latitude</FormLabel>
                 <FormControl>
-                  <Input placeholder="Contoh: -6.2088" type="number" step="any" {...field} />
+                  <Input placeholder="Masukkan koordinat latitude" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -302,7 +328,7 @@ const InformationTab = () => {
               <FormItem>
                 <FormLabel>Longitude</FormLabel>
                 <FormControl>
-                  <Input placeholder="Contoh: 106.8456" type="number" step="any" {...field} />
+                  <Input placeholder="Masukkan koordinat longitude" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

@@ -167,6 +167,7 @@ export type Database = {
           long_description: string | null
           name: string
           operational_hours: string | null
+          price: number | null
           rating: number | null
           reviews_count: number | null
           updated_at: string | null
@@ -182,6 +183,7 @@ export type Database = {
           long_description?: string | null
           name: string
           operational_hours?: string | null
+          price?: number | null
           rating?: number | null
           reviews_count?: number | null
           updated_at?: string | null
@@ -197,6 +199,7 @@ export type Database = {
           long_description?: string | null
           name?: string
           operational_hours?: string | null
+          price?: number | null
           rating?: number | null
           reviews_count?: number | null
           updated_at?: string | null

@@ -20,6 +20,7 @@ interface DestinationContentProps {
   setIsSaved: (saved: boolean) => void;
   userId?: string;
   isAuthenticated: boolean;
+  isAdmin?: boolean;
 }
 
 const DestinationContent = ({
@@ -28,7 +29,8 @@ const DestinationContent = ({
   isSaved,
   setIsSaved,
   userId,
-  isAuthenticated
+  isAuthenticated,
+  isAdmin = false
 }: DestinationContentProps) => {
   return (
     <>
@@ -61,11 +63,17 @@ const DestinationContent = ({
         </TabsContent>
 
         <TabsContent value="tiket">
-          <TicketTab 
-            tickets={ticketTypes} 
-            destinationId={destination.id}
-            isAuthenticated={isAuthenticated}
-          />
+          {!isAdmin ? (
+            <TicketTab 
+              tickets={ticketTypes} 
+              destinationId={destination.id}
+              isAuthenticated={isAuthenticated}
+            />
+          ) : (
+            <div className="p-6 bg-gray-50 rounded-md">
+              <p className="text-gray-600">Admin tidak dapat membeli tiket.</p>
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="ulasan">

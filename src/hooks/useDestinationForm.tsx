@@ -14,6 +14,7 @@ export const destinationFormSchema = z.object({
   fullDescription: z.string().min(10, { message: "Deskripsi lengkap wajib diisi" }),
   category: z.string({ required_error: "Pilih kategori" }),
   status: z.string().optional(),
+  price: z.string().transform(val => Number(val) || 0),
   
   // Location
   province: z.string({ required_error: "Pilih provinsi" }),
@@ -63,6 +64,7 @@ export type DestinationFormValues = z.infer<typeof destinationFormSchema>;
 
 export const defaultValues: Partial<DestinationFormValues> = {
   status: "Regular",
+  price: "0",
   operationalHours: {
     monday: { isOpen: true, openTime: "08:00", closeTime: "17:00" },
     tuesday: { isOpen: true, openTime: "08:00", closeTime: "17:00" },

@@ -1,68 +1,45 @@
 
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
-import { Toaster } from '@/components/ui/toaster';
-import { Toaster as Sonner } from "@/components/ui/sonner";
+import { Toaster } from 'sonner';
 
-// Pages
-import Index from './pages/Index';
+// Public pages
+import Home from './pages/Home';
+import Register from './pages/auth/Register';
+import AdminRegister from './pages/auth/AdminRegister';
+import Login from './pages/auth/Login';
 import Destinations from './pages/Destinations';
 import DestinationDetail from './pages/DestinationDetail';
-import Promotions from './pages/Promotions';
-import PromotionDetail from './pages/PromotionDetail';
-import Help from './pages/Help';
-import NotFound from './pages/NotFound';
 
-// Auth Pages
-import Login from './pages/auth/Login';
-import Register from './pages/auth/Register';
-import Profile from './pages/auth/Profile';
-
-// Admin Pages
+// Admin pages
 import AdminLayout from './layouts/AdminLayout';
 import AdminDashboard from './pages/admin/Dashboard';
-import AdminDestinations from './pages/admin/Destinations';
+import DestinationsList from './pages/admin/Destinations';
 import DestinationForm from './pages/admin/DestinationForm';
-import Transactions from './pages/admin/Transactions';
-
-// New Pages
-import SavedDestinations from './pages/SavedDestinations';
-import Bookings from './pages/Bookings';
-import Payment from './pages/Payment';
 
 function App() {
   return (
-    <Router>
-      <AuthProvider>
+    <AuthProvider>
+      <Router>
         <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/destinasi" element={<Destinations />} />
-          <Route path="/destinasi/:slug" element={<DestinationDetail />} />
-          <Route path="/promo" element={<Promotions />} />
-          <Route path="/promo/:slug" element={<PromotionDetail />} />
-          <Route path="/bantuan" element={<Help />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/saved" element={<SavedDestinations />} />
-          <Route path="/bookings" element={<Bookings />} />
-          <Route path="/payment" element={<Payment />} />
-          
-          {/* Admin Routes */}
-          <Route path="/admin" element={<AdminLayout />}>
+          {/* Public routes */}
+          <Route index element={<Home />} />
+          <Route path="register" element={<Register />} />
+          <Route path="admin/register" element={<AdminRegister />} />
+          <Route path="login" element={<Login />} />
+          <Route path="destinasi" element={<Destinations />} />
+          <Route path="destinasi/:id" element={<DestinationDetail />} />
+
+          {/* Admin routes */}
+          <Route path="admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />
-            <Route path="destinations" element={<AdminDestinations />} />
+            <Route path="destinations" element={<DestinationsList />} />
             <Route path="destinations/new" element={<DestinationForm />} />
-            <Route path="destinations/edit/:id" element={<DestinationForm />} />
-            <Route path="transactions" element={<Transactions />} />
           </Route>
-          
-          <Route path="*" element={<NotFound />} />
         </Routes>
-        <Toaster />
-        <Sonner position="top-center" />
-      </AuthProvider>
-    </Router>
+        <Toaster position="top-right" />
+      </Router>
+    </AuthProvider>
   );
 }
 

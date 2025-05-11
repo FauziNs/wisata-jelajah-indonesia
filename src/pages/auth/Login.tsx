@@ -10,6 +10,8 @@ import { supabase } from '@/integrations/supabase/client';
 import LoginForm from '@/components/auth/LoginForm';
 import SocialLogin from '@/components/auth/SocialLogin';
 import AdminLoginForm from '@/components/auth/AdminLoginForm';
+import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -86,13 +88,23 @@ const Login = () => {
               </Tabs>
             </CardContent>
             
-            <CardFooter className="justify-center">
+            <CardFooter className="justify-center flex flex-col space-y-4">
               <p className="text-sm text-gray-600">
                 Belum memiliki akun?{' '}
                 <Link to="/register" className="font-medium text-primary hover:underline">
                   Daftar sekarang
                 </Link>
               </p>
+              
+              {activeTab === 'admin' && (
+                <div className="w-full">
+                  <Link to="/admin/register">
+                    <Button variant="outline" className="w-full">
+                      Daftar sebagai Admin
+                    </Button>
+                  </Link>
+                </div>
+              )}
             </CardFooter>
           </Card>
         </div>

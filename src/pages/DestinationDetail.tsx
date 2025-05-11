@@ -72,6 +72,7 @@ const DestinationDetail = () => {
   const [visitorPhone, setVisitorPhone] = useState('');
   const [specialRequests, setSpecialRequests] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   // Get tomorrow's date in YYYY-MM-DD format for default visit date
   function getTomorrowDate() {
@@ -103,10 +104,30 @@ const DestinationDetail = () => {
       if (user.email) setVisitorEmail(user.email);
       if (user.user_metadata?.full_name) setVisitorName(user.user_metadata.full_name);
       if (user.user_metadata?.phone) setVisitorPhone(user.user_metadata.phone);
+      
+      // Check if user is admin
+      checkUserRole();
     }
 
     fetchDestinationData(identifier);
   }, [id, slug, isAuthenticated, user, navigate, toast]);
+
+  // Check if the user is an admin
+  const checkUserRole = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user?.id)
+        .single();
+        
+      if (!error && data && data.role === 'admin') {
+        setIsAdmin(true);
+      }
+    } catch (error) {
+      console.error("Error checking user role:", error);
+    }
+  };
 
   const fetchDestinationData = async (identifier: string) => {
     try {
@@ -141,13 +162,15 @@ const DestinationDetail = () => {
           name: data.name,
           location: data.location,
           image_url: data.image_url || undefined,
+          price: data.price || 0,
           description: data.description,
           category: data.category || undefined,
           rating: data.rating || undefined,
           operational_hours: data.operational_hours || undefined,
           long_description: data.long_description || undefined,
           full_location: data.full_location || undefined,
-          reviews_count: data.reviews_count || undefined
+          reviews_count: data.reviews_count || undefined,
+          amenities: data.amenities
         };
         
         setDestination(typedDestination);
@@ -164,15 +187,27 @@ const DestinationDetail = () => {
           const typedTickets: TicketType[] = ticketData.map(ticket => ({
             id: ticket.id,
             name: ticket.name,
-            price: ticket.price,
+            price: ticket.price || typedDestination.price as number || 0,
             description: ticket.description || undefined,
-            capacity: undefined, // Adding as undefined to match interface
-            validity_duration: undefined, // Adding as undefined to match interface
-            destination_id: ticket.destination_id || undefined
+            capacity: ticket.capacity || undefined,
+            validity_duration: ticket.validity_duration || undefined,
+            destination_id: ticket.destination_id || data.id
           }));
           
           setTicketTypes(typedTickets);
           setSelectedTicket(typedTickets[0]); // Select first ticket by default
+        } else {
+          // If no tickets found, create a default one based on destination price
+          const defaultTicket: TicketType = {
+            id: 'default',
+            name: 'Tiket Masuk',
+            price: typedDestination.price as number || 50000,
+            description: 'Tiket masuk untuk mengunjungi destinasi',
+            destination_id: data.id
+          };
+          
+          setTicketTypes([defaultTicket]);
+          setSelectedTicket(defaultTicket);
         }
 
         // Check if destination is saved
@@ -194,7 +229,7 @@ const DestinationDetail = () => {
           name: 'Pantai Kuta',
           location: 'Bali',
           image_url: 'https://images.unsplash.com/photo-1539367628448-4bc5c9d171c8',
-          price: 'Rp 50.000',
+          price: 50000,
           description: 'Pantai Kuta adalah salah satu pantai terkenal di Bali dengan ombak yang cocok untuk berselancar, pemandangan sunset yang menakjubkan, dan berbagai aktivitas menarik.',
           category: 'Pantai',
           rating: 4.7,
@@ -210,7 +245,7 @@ const DestinationDetail = () => {
           {
             id: '1',
             name: 'Tiket Dewasa',
-            price: 50000,
+            price: dummyData.price as number,
             description: 'Untuk pengunjung berusia 12 tahun ke atas',
             capacity: 'Tidak terbatas',
             validity_duration: '1'
@@ -218,7 +253,7 @@ const DestinationDetail = () => {
           {
             id: '2',
             name: 'Tiket Anak-anak',
-            price: 25000,
+            price: (dummyData.price as number) / 2,
             description: 'Untuk pengunjung berusia 5-11 tahun',
             capacity: 'Tidak terbatas',
             validity_duration: '1'
@@ -240,7 +275,6 @@ const DestinationDetail = () => {
     }
   };
 
-  
   const handleSaveDestination = async () => {
     if (!isAuthenticated) {
       toast({
@@ -313,6 +347,15 @@ const DestinationDetail = () => {
         variant: "default"
       });
       navigate('/login', { state: { from: `/destinasi/${id || slug}` } });
+      return;
+    }
+
+    if (isAdmin) {
+      toast({
+        title: "Tidak Diizinkan",
+        description: "Admin tidak dapat membeli tiket",
+        variant: "destructive"
+      });
       return;
     }
 
@@ -498,6 +541,11 @@ const DestinationDetail = () => {
                   <Star size={18} className="text-yellow-400 mr-1" />
                   <span>{destination.rating?.toFixed(1) || '4.5'}</span>
                 </div>
+                <div className="mx-2 h-1 w-1 rounded-full bg-gray-400"></div>
+                <div className="flex items-center">
+                  <DollarSign size={18} className="text-green-500 mr-1" />
+                  <span>Rp {(destination.price as number || 0).toLocaleString('id-ID')}</span>
+                </div>
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4 mb-4">
@@ -590,11 +638,28 @@ const DestinationDetail = () => {
               </TabsContent>
 
               <TabsContent value="tiket" className="mt-4">
-                <TicketTab 
-                  tickets={ticketTypes}
-                  destinationId={destination.id}
-                  isAuthenticated={isAuthenticated}
-                />
+                {!isAdmin ? (
+                  <TicketTab 
+                    tickets={ticketTypes}
+                    destinationId={destination.id}
+                    isAuthenticated={isAuthenticated}
+                  />
+                ) : (
+                  <Card>
+                    <CardContent className="p-6">
+                      <h3 className="text-xl font-semibold mb-4 text-center">Admin Tidak Dapat Membeli Tiket</h3>
+                      <p className="text-gray-700 text-center">
+                        Sebagai admin, Anda tidak dapat melakukan pembelian tiket. 
+                        Silakan kembali ke dashboard admin untuk mengelola sistem.
+                      </p>
+                      <div className="flex justify-center mt-6">
+                        <Button onClick={() => navigate('/admin')}>
+                          Kembali ke Dashboard Admin
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
               </TabsContent>
 
               <TabsContent value="ulasan" className="mt-4">
@@ -610,167 +675,183 @@ const DestinationDetail = () => {
 
           {/* Right Column - Booking Form */}
           <div className="lg:col-span-1">
-            <Card className="sticky top-24">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-xl">Pesan Tiket</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="ticket-type">Pilih Jenis Tiket</Label>
-                    <Select 
-                      value={selectedTicket?.id}
-                      onValueChange={(value) => {
-                        const ticket = ticketTypes.find(t => t.id === value);
-                        if (ticket) setSelectedTicket(ticket);
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Pilih Tiket" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectGroup>
-                          <SelectLabel>Jenis Tiket</SelectLabel>
-                          {ticketTypes.map((ticket) => (
-                            <SelectItem key={ticket.id} value={ticket.id}>
-                              {ticket.name} - Rp {ticket.price.toLocaleString('id-ID')}
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="quantity">Jumlah Tiket</Label>
-                    <div className="flex items-center mt-1">
-                      <button 
-                        type="button" 
-                        onClick={decrementQuantity}
-                        className="bg-gray-200 px-3 py-2 rounded-l"
-                        disabled={quantity <= 1}
+            {!isAdmin ? (
+              <Card className="sticky top-24" id="booking-form">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-xl">Pesan Tiket</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="ticket-type">Pilih Jenis Tiket</Label>
+                      <Select 
+                        value={selectedTicket?.id}
+                        onValueChange={(value) => {
+                          const ticket = ticketTypes.find(t => t.id === value);
+                          if (ticket) setSelectedTicket(ticket);
+                        }}
                       >
-                        -
-                      </button>
-                      <input 
-                        id="quantity"
-                        type="number" 
-                        min="1" 
-                        value={quantity} 
-                        onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                        className="w-20 text-center border-y py-2"
-                        readOnly
+                        <SelectTrigger>
+                          <SelectValue placeholder="Pilih Tiket" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectGroup>
+                            <SelectLabel>Jenis Tiket</SelectLabel>
+                            {ticketTypes.map((ticket) => (
+                              <SelectItem key={ticket.id} value={ticket.id}>
+                                {ticket.name} - Rp {ticket.price.toLocaleString('id-ID')}
+                              </SelectItem>
+                            ))}
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="quantity">Jumlah Tiket</Label>
+                      <div className="flex items-center mt-1">
+                        <button 
+                          type="button" 
+                          onClick={decrementQuantity}
+                          className="bg-gray-200 px-3 py-2 rounded-l"
+                          disabled={quantity <= 1}
+                        >
+                          -
+                        </button>
+                        <input 
+                          id="quantity"
+                          type="number" 
+                          min="1" 
+                          value={quantity} 
+                          onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                          className="w-20 text-center border-y py-2"
+                          readOnly
+                        />
+                        <button 
+                          type="button" 
+                          onClick={incrementQuantity}
+                          className="bg-gray-200 px-3 py-2 rounded-r"
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="visit-date">Tanggal Kunjungan</Label>
+                      <Input 
+                        id="visit-date"
+                        type="date" 
+                        className="mt-1"
+                        value={visitDate}
+                        onChange={(e) => setVisitDate(e.target.value)}
+                        min={getTomorrowDate()}
                       />
-                      <button 
-                        type="button" 
-                        onClick={incrementQuantity}
-                        className="bg-gray-200 px-3 py-2 rounded-r"
-                      >
-                        +
-                      </button>
                     </div>
-                  </div>
 
-                  <div>
-                    <Label htmlFor="visit-date">Tanggal Kunjungan</Label>
-                    <Input 
-                      id="visit-date"
-                      type="date" 
-                      className="mt-1"
-                      value={visitDate}
-                      onChange={(e) => setVisitDate(e.target.value)}
-                      min={getTomorrowDate()}
-                    />
-                  </div>
+                    <Separator className="my-4" />
 
-                  <Separator className="my-4" />
-
-                  <div>
-                    <h3 className="font-medium mb-3">Data Pengunjung</h3>
-                    
-                    <div className="space-y-3">
-                      <div>
-                        <Label htmlFor="visitor-name">Nama Lengkap</Label>
-                        <Input
-                          id="visitor-name"
-                          placeholder="Masukkan nama lengkap"
-                          value={visitorName}
-                          onChange={(e) => setVisitorName(e.target.value)}
-                        />
-                      </div>
+                    <div>
+                      <h3 className="font-medium mb-3">Data Pengunjung</h3>
                       
-                      <div>
-                        <Label htmlFor="visitor-email">Email</Label>
-                        <Input
-                          id="visitor-email"
-                          type="email"
-                          placeholder="Masukkan email"
-                          value={visitorEmail}
-                          onChange={(e) => setVisitorEmail(e.target.value)}
-                        />
+                      <div className="space-y-3">
+                        <div>
+                          <Label htmlFor="visitor-name">Nama Lengkap</Label>
+                          <Input
+                            id="visitor-name"
+                            placeholder="Masukkan nama lengkap"
+                            value={visitorName}
+                            onChange={(e) => setVisitorName(e.target.value)}
+                          />
+                        </div>
+                        
+                        <div>
+                          <Label htmlFor="visitor-email">Email</Label>
+                          <Input
+                            id="visitor-email"
+                            type="email"
+                            placeholder="Masukkan email"
+                            value={visitorEmail}
+                            onChange={(e) => setVisitorEmail(e.target.value)}
+                          />
+                        </div>
+                        
+                        <div>
+                          <Label htmlFor="visitor-phone">No. Telepon</Label>
+                          <Input
+                            id="visitor-phone"
+                            placeholder="Masukkan nomor telepon"
+                            value={visitorPhone}
+                            onChange={(e) => setVisitorPhone(e.target.value)}
+                          />
+                        </div>
+                        
+                        <div>
+                          <Label htmlFor="special-requests">Permintaan Khusus (Opsional)</Label>
+                          <Input
+                            id="special-requests"
+                            placeholder="Masukkan permintaan khusus jika ada"
+                            value={specialRequests}
+                            onChange={(e) => setSpecialRequests(e.target.value)}
+                          />
+                        </div>
                       </div>
-                      
-                      <div>
-                        <Label htmlFor="visitor-phone">No. Telepon</Label>
-                        <Input
-                          id="visitor-phone"
-                          placeholder="Masukkan nomor telepon"
-                          value={visitorPhone}
-                          onChange={(e) => setVisitorPhone(e.target.value)}
-                        />
+                    </div>
+
+                    <Separator className="my-4" />
+
+                    <div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">Harga tiket</span>
+                        <span>Rp {selectedTicket ? selectedTicket.price.toLocaleString('id-ID') : '0'}</span>
                       </div>
-                      
-                      <div>
-                        <Label htmlFor="special-requests">Permintaan Khusus (Opsional)</Label>
-                        <Input
-                          id="special-requests"
-                          placeholder="Masukkan permintaan khusus jika ada"
-                          value={specialRequests}
-                          onChange={(e) => setSpecialRequests(e.target.value)}
-                        />
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">Jumlah</span>
+                        <span>{quantity} tiket</span>
+                      </div>
+                      <Separator className="my-2" />
+                      <div className="flex justify-between items-center font-medium text-lg">
+                        <span>Total</span>
+                        <span className="text-primary">Rp {formattedTotalPrice}</span>
                       </div>
                     </div>
                   </div>
-
-                  <Separator className="my-4" />
-
-                  <div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Harga tiket</span>
-                      <span>Rp {selectedTicket ? selectedTicket.price.toLocaleString('id-ID') : '0'}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Jumlah</span>
-                      <span>{quantity} tiket</span>
-                    </div>
-                    <Separator className="my-2" />
-                    <div className="flex justify-between items-center font-medium text-lg">
-                      <span>Total</span>
-                      <span className="text-primary">Rp {formattedTotalPrice}</span>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-              <CardFooter>
-                <Button 
-                  className="w-full flex items-center gap-2" 
-                  onClick={handleBookTicket}
-                  disabled={!selectedTicket || isSubmitting}
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      <span>Memproses...</span>
-                    </>
-                  ) : (
-                    <>
-                      <DollarSign className="h-4 w-4" />
-                      <span>Pesan & Bayar Sekarang</span>
-                    </>
-                  )}
-                </Button>
-              </CardFooter>
-            </Card>
+                </CardContent>
+                <CardFooter>
+                  <Button 
+                    className="w-full flex items-center gap-2" 
+                    onClick={handleBookTicket}
+                    disabled={!selectedTicket || isSubmitting}
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span>Memproses...</span>
+                      </>
+                    ) : (
+                      <>
+                        <DollarSign className="h-4 w-4" />
+                        <span>Pesan & Bayar Sekarang</span>
+                      </>
+                    )}
+                  </Button>
+                </CardFooter>
+              </Card>
+            ) : (
+              <Card className="sticky top-24">
+                <CardHeader>
+                  <CardTitle>Akun Admin</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-gray-600">Anda masuk sebagai admin. Akses panel admin untuk mengelola destinasi dan sistem.</p>
+                </CardContent>
+                <CardFooter>
+                  <Button className="w-full" onClick={() => navigate('/admin')}>
+                    Ke Dashboard Admin
+                  </Button>
+                </CardFooter>
+              </Card>
+            )}
           </div>
         </div>
       </div>

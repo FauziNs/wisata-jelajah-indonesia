@@ -1,16 +1,10 @@
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { DollarSign, Ticket, User, CheckCircle, ShoppingCart } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { DollarSign, Users, Calendar } from 'lucide-react';
+import { toast } from 'sonner';
 import { TicketType } from '@/types/destination';
 
 interface TicketTabProps {
@@ -19,136 +13,118 @@ interface TicketTabProps {
   isAuthenticated: boolean;
 }
 
-const TicketTab = ({ tickets, destinationId, isAuthenticated }: TicketTabProps) => {
+const TicketTab: React.FC<TicketTabProps> = ({
+  tickets,
+  destinationId,
+  isAuthenticated
+}) => {
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const [selectedTicket, setSelectedTicket] = useState<TicketType | null>(null);
-  const [quantity, setQuantity] = useState(1);
+  const [selectedTicket, setSelectedTicket] = useState<string | null>(null);
 
-  const handleBookTicket = (ticketId: string) => {
+  const handleBuyTicket = (ticketId: string) => {
     if (!isAuthenticated) {
       toast({
         title: "Login Diperlukan",
-        description: "Silakan login terlebih dahulu untuk memesan tiket",
-        variant: "default"
+        description: "Silakan login terlebih dahulu untuk membeli tiket",
+        variant: "default",
       });
       navigate('/login', { state: { from: `/destinasi/${destinationId}` } });
       return;
     }
     
-    navigate(`/booking/${destinationId}?ticket_type=${ticketId}&quantity=${quantity}`);
-  };
-
-  const handleTicketSelect = (ticket: TicketType) => {
-    setSelectedTicket(ticket === selectedTicket ? null : ticket);
-  };
-
-  const incrementQuantity = () => {
-    setQuantity(prevQuantity => prevQuantity + 1);
-  };
-
-  const decrementQuantity = () => {
-    if (quantity > 1) {
-      setQuantity(prevQuantity => prevQuantity - 1);
+    setSelectedTicket(ticketId);
+    
+    // Scroll to booking form
+    const bookingFormElement = document.getElementById('booking-form');
+    if (bookingFormElement) {
+      bookingFormElement.scrollIntoView({ behavior: 'smooth' });
     }
   };
 
   return (
-    <div className="space-y-4">
-      {tickets && tickets.length > 0 ? (
-        <>
-          <Accordion type="single" collapsible>
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-xl font-semibold mb-4">Tiket Tersedia</h3>
+        {tickets && tickets.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {tickets.map((ticket) => (
-              <AccordionItem key={ticket.id} value={ticket.id.toString()}>
-                <AccordionTrigger>
-                  <div className="flex justify-between w-full">
-                    <div className="flex items-center">
-                      <Ticket className="mr-2 h-4 w-4" />
-                      {ticket.name}
-                    </div>
-                    <div className="font-medium">
-                      <DollarSign className="mr-2 h-4 w-4 inline-block" />
-                      Rp {ticket.price.toLocaleString('id-ID')}
-                    </div>
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent>
-                  <div className="py-4">
-                    <p className="text-gray-700 mb-4">{ticket.description}</p>
-                    <div className="flex items-center text-gray-700 mb-2">
-                      <User className="mr-2 h-4 w-4" />
-                      <span>Kapasitas: {ticket.capacity || 'Tidak terbatas'} orang</span>
-                    </div>
-                    <div className="flex items-center text-gray-700 mb-4">
-                      <CheckCircle className="mr-2 h-4 w-4" />
-                      <span>Validitas: {ticket.validity_duration || '1'} hari</span>
-                    </div>
-                    
-                    <div className="flex items-center space-x-4 my-4">
-                      <label htmlFor={`quantity-${ticket.id}`} className="font-medium text-gray-700">Jumlah:</label>
-                      <div className="flex items-center">
-                        <button 
-                          type="button" 
-                          onClick={decrementQuantity}
-                          className="bg-gray-200 px-3 py-1 rounded-l"
-                          disabled={quantity <= 1}
-                        >
-                          -
-                        </button>
-                        <input 
-                          id={`quantity-${ticket.id}`}
-                          type="number" 
-                          min="1" 
-                          value={quantity} 
-                          onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                          className="w-12 text-center border-y py-1"
-                        />
-                        <button 
-                          type="button" 
-                          onClick={incrementQuantity}
-                          className="bg-gray-200 px-3 py-1 rounded-r"
-                        >
-                          +
-                        </button>
+              <Card key={ticket.id} className={`overflow-hidden transition-all ${
+                selectedTicket === ticket.id ? 'border-primary ring-1 ring-primary' : ''
+              }`}>
+                <CardHeader className="bg-muted/30">
+                  <CardTitle>{ticket.name}</CardTitle>
+                  <CardDescription>{ticket.description}</CardDescription>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="space-y-3">
+                    <div className="flex justify-between">
+                      <div className="flex items-center gap-2 text-gray-600">
+                        <DollarSign className="h-4 w-4" />
+                        <span>Harga</span>
                       </div>
+                      <span className="font-medium text-primary">
+                        Rp {ticket.price.toLocaleString('id-ID')}
+                      </span>
                     </div>
                     
-                    <Button 
-                      onClick={() => handleBookTicket(ticket.id)}
-                      className="bg-primary hover:bg-primary/90 flex items-center gap-2"
-                    >
-                      <ShoppingCart className="h-4 w-4" />
-                      Pesan Sekarang
-                    </Button>
-
-                    <div className="mt-4 text-sm text-gray-500">
-                      <p>* Harga sudah termasuk pajak dan biaya layanan</p>
-                      <p>* Pembayaran dapat dilakukan melalui kartu kredit, transfer bank, atau e-wallet</p>
-                    </div>
+                    {ticket.capacity && (
+                      <div className="flex justify-between">
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <Users className="h-4 w-4" />
+                          <span>Kapasitas</span>
+                        </div>
+                        <span>{ticket.capacity}</span>
+                      </div>
+                    )}
+                    
+                    {ticket.validity_duration && (
+                      <div className="flex justify-between">
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <Calendar className="h-4 w-4" />
+                          <span>Masa Berlaku</span>
+                        </div>
+                        <span>{ticket.validity_duration} hari</span>
+                      </div>
+                    )}
                   </div>
-                </AccordionContent>
-              </AccordionItem>
+                </CardContent>
+                <CardFooter className="px-6 py-4 bg-muted/20 flex justify-end">
+                  <Button 
+                    onClick={() => handleBuyTicket(ticket.id)}
+                    size="sm"
+                  >
+                    Pilih Tiket
+                  </Button>
+                </CardFooter>
+              </Card>
             ))}
-          </Accordion>
-
-          {/* Payment Info */}
-          <div className="bg-gray-50 p-4 rounded-lg mt-6">
-            <h4 className="font-medium mb-2">Informasi Pembayaran:</h4>
-            <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
-              <li>Pembayaran menggunakan Stripe (kartu kredit/debit)</li>
-              <li>Tiket akan dikirim ke email setelah pembayaran berhasil</li>
-              <li>Kebijakan pembatalan berlaku sesuai ketentuan</li>
-            </ul>
           </div>
-        </>
-      ) : (
-        <Card>
-          <div className="p-6">
-            <h3 className="text-xl font-semibold mb-4">Tiket</h3>
-            <p className="text-gray-700">Tidak ada tiket tersedia untuk destinasi ini.</p>
+        ) : (
+          <div className="bg-muted/20 rounded-lg p-8 text-center">
+            <p className="text-gray-500">Tidak ada tiket yang tersedia saat ini</p>
           </div>
-        </Card>
-      )}
+        )}
+      </div>
+      
+      <Card className="border-dashed">
+        <CardHeader>
+          <CardTitle className="text-lg">Informasi Pembelian Tiket</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <p className="text-sm text-gray-600">
+            • Tiket berlaku sesuai dengan tanggal kunjungan yang dipilih
+          </p>
+          <p className="text-sm text-gray-600">
+            • Pembayaran dapat dilakukan melalui transfer bank atau e-wallet
+          </p>
+          <p className="text-sm text-gray-600">
+            • Tiket akan dikirimkan melalui email setelah pembayaran berhasil
+          </p>
+          <p className="text-sm text-gray-600">
+            • Untuk informasi lebih lanjut, silakan hubungi customer service kami
+          </p>
+        </CardContent>
+      </Card>
     </div>
   );
 };
