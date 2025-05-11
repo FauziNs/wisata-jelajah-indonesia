@@ -1,3 +1,4 @@
+
 import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
@@ -170,7 +171,7 @@ const DestinationDetail = () => {
           long_description: data.long_description || undefined,
           full_location: data.full_location || undefined,
           reviews_count: data.reviews_count || undefined,
-          amenities: data.amenities
+          amenities: data.amenities || undefined
         };
         
         setDestination(typedDestination);
@@ -201,7 +202,7 @@ const DestinationDetail = () => {
           const defaultTicket: TicketType = {
             id: 'default',
             name: 'Tiket Masuk',
-            price: typedDestination.price as number || 50000,
+            price: typeof typedDestination.price === 'number' ? typedDestination.price : 50000,
             description: 'Tiket masuk untuk mengunjungi destinasi',
             destination_id: data.id
           };
