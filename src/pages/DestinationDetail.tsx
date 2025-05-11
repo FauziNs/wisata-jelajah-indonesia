@@ -53,6 +53,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DestinationType, TicketType } from '@/types/destination';
 import TicketTab from '@/components/destination/TicketTab';
+import DestinationContent from '@/components/destination/DestinationContent';
 
 const DestinationDetail = () => {
   const { id, slug } = useParams<{ id?: string; slug?: string }>();
@@ -171,6 +172,7 @@ const DestinationDetail = () => {
           full_location: data.full_location || undefined,
           reviews_count: data.reviews_count || undefined,
           amenities: data.amenities || undefined,
+          address: data.address || undefined,
           created_at: data.created_at,
           updated_at: data.updated_at
         };
@@ -207,7 +209,9 @@ const DestinationDetail = () => {
             name: 'Tiket Masuk',
             price: typeof typedDestination.price === 'number' ? typedDestination.price : 50000,
             description: 'Tiket masuk untuk mengunjungi destinasi',
-            destination_id: data.id
+            destination_id: data.id,
+            capacity: 'Tidak terbatas',
+            validity_duration: '1'
           };
           
           setTicketTypes([defaultTicket]);
@@ -509,172 +513,15 @@ const DestinationDetail = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Column - Destination Details */}
           <div className="lg:col-span-2">
-            {/* Destination Header */}
-            <div className="mb-6">
-              <div className="flex flex-wrap justify-between items-start mb-2">
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">{destination?.name}</h1>
-                
-                <Button
-                  variant={isSaved ? "secondary" : "outline"}
-                  onClick={handleSaveDestination}
-                  className="flex items-center gap-2"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill={isSaved ? "currentColor" : "none"}
-                    stroke={isSaved ? "none" : "currentColor"}
-                    className="w-5 h-5"
-                    strokeWidth="2"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z"
-                    />
-                  </svg>
-                  {isSaved ? 'Tersimpan' : 'Simpan'}
-                </Button>
-              </div>
-
-              <div className="flex items-center text-gray-600 mb-4">
-                <MapPin size={18} className="mr-1" />
-                <span>{destination.location}</span>
-                <div className="mx-2 h-1 w-1 rounded-full bg-gray-400"></div>
-                <div className="flex items-center">
-                  <Star size={18} className="text-yellow-400 mr-1" />
-                  <span>{destination.rating?.toFixed(1) || '4.5'}</span>
-                </div>
-                <div className="mx-2 h-1 w-1 rounded-full bg-gray-400"></div>
-                <div className="flex items-center">
-                  <DollarSign size={18} className="text-green-500 mr-1" />
-                  <span>Rp {(destination.price as number || 0).toLocaleString('id-ID')}</span>
-                </div>
-              </div>
-
-              <div className="flex flex-col sm:flex-row gap-4 mb-4">
-                <img 
-                  src={destination.image_url || 'https://images.unsplash.com/photo-1539367628448-4bc5c9d171c8'}
-                  alt={destination.name}
-                  className="rounded-lg w-full h-80 object-cover"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                <div className="bg-gray-50 p-4 rounded-md border border-gray-100">
-                  <div className="flex items-center text-gray-700 mb-1">
-                    <Clock size={16} className="mr-2 text-primary" />
-                    <span className="text-sm font-medium">Jam Buka</span>
-                  </div>
-                  <p className="text-sm">{destination.operational_hours || '08:00 - 18:00 (Setiap Hari)'}</p>
-                </div>
-                <div className="bg-gray-50 p-4 rounded-md border border-gray-100">
-                  <div className="flex items-center text-gray-700 mb-1">
-                    <Calendar size={16} className="mr-2 text-primary" />
-                    <span className="text-sm font-medium">Waktu Terbaik</span>
-                  </div>
-                  <p className="text-sm">{destination.best_time_to_visit || 'Pagi dan Sore Hari'}</p>
-                </div>
-                <div className="bg-gray-50 p-4 rounded-md border border-gray-100">
-                  <div className="flex items-center text-gray-700 mb-1">
-                    <Ticket size={16} className="mr-2 text-primary" />
-                    <span className="text-sm font-medium">Kategori</span>
-                  </div>
-                  <p className="text-sm">{destination.category || 'Wisata Alam'}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Tabs Content */}
-            <Tabs defaultValue="informasi" className="w-full mb-6">
-              <TabsList>
-                <TabsTrigger value="informasi">
-                  <Info className="mr-2 h-4 w-4" />
-                  Informasi
-                </TabsTrigger>
-                <TabsTrigger value="tiket">
-                  <Ticket className="mr-2 h-4 w-4" />
-                  Tiket
-                </TabsTrigger>
-                <TabsTrigger value="ulasan">
-                  <Star className="mr-2 h-4 w-4" />
-                  Ulasan
-                </TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="informasi" className="mt-4">
-                <div className="space-y-4">
-                  <Card>
-                    <CardContent className="p-6">
-                      <h3 className="text-xl font-semibold mb-4">Deskripsi</h3>
-                      <p className="text-gray-700">{destination.description}</p>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardContent className="p-6">
-                      <h3 className="text-xl font-semibold mb-4">Fasilitas</h3>
-                      <p className="text-gray-700">{destination.amenities || 'Tidak ada informasi fasilitas'}</p>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardContent className="p-6">
-                      <h3 className="text-xl font-semibold mb-4">Lokasi</h3>
-                      <div className="flex items-center text-gray-700">
-                        <MapPin className="mr-2 h-4 w-4" />
-                        {destination.address || destination.location || 'Tidak ada informasi alamat lengkap'}
-                      </div>
-                      {destination.google_maps_url && (
-                        <a
-                          href={destination.google_maps_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-500 hover:underline flex items-center mt-2"
-                        >
-                          <MapPin className="mr-2 h-4 w-4" />
-                          Lihat di Google Maps
-                        </a>
-                      )}
-                    </CardContent>
-                  </Card>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="tiket" className="mt-4">
-                {!isAdmin ? (
-                  <TicketTab 
-                    tickets={ticketTypes}
-                    destinationId={destination.id}
-                    isAuthenticated={isAuthenticated}
-                  />
-                ) : (
-                  <Card>
-                    <CardContent className="p-6">
-                      <h3 className="text-xl font-semibold mb-4 text-center">Admin Tidak Dapat Membeli Tiket</h3>
-                      <p className="text-gray-700 text-center">
-                        Sebagai admin, Anda tidak dapat melakukan pembelian tiket. 
-                        Silakan kembali ke dashboard admin untuk mengelola sistem.
-                      </p>
-                      <div className="flex justify-center mt-6">
-                        <Button onClick={() => navigate('/admin')}>
-                          Kembali ke Dashboard Admin
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-              </TabsContent>
-
-              <TabsContent value="ulasan" className="mt-4">
-                <Card>
-                  <CardContent className="p-6">
-                    <h3 className="text-xl font-semibold mb-4">Ulasan Pengunjung</h3>
-                    <p className="text-gray-700">Belum ada ulasan untuk destinasi ini.</p>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            </Tabs>
+            <DestinationContent 
+              destination={destination}
+              ticketTypes={ticketTypes}
+              isSaved={isSaved}
+              setIsSaved={setIsSaved}
+              userId={user?.id}
+              isAuthenticated={isAuthenticated}
+              isAdmin={isAdmin}
+            />
           </div>
 
           {/* Right Column - Booking Form */}
@@ -716,7 +563,7 @@ const DestinationDetail = () => {
                       <div className="flex items-center mt-1">
                         <button 
                           type="button" 
-                          onClick={decrementQuantity}
+                          onClick={() => decrementQuantity()}
                           className="bg-gray-200 px-3 py-2 rounded-l"
                           disabled={quantity <= 1}
                         >
@@ -733,7 +580,7 @@ const DestinationDetail = () => {
                         />
                         <button 
                           type="button" 
-                          onClick={incrementQuantity}
+                          onClick={() => incrementQuantity()}
                           className="bg-gray-200 px-3 py-2 rounded-r"
                         >
                           +
