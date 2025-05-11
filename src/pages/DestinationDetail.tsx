@@ -1,3 +1,4 @@
+
 import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
@@ -163,21 +164,21 @@ const DestinationDetail = () => {
           name: data.name,
           location: data.location,
           description: data.description,
-          amenities: data.amenities,
-          address: data.address,
-          operational_hours: data.operational_hours,
-          best_time_to_visit: data.best_time_to_visit,
-          google_maps_url: data.google_maps_url,
-          image_url: data.image_url,
+          amenities: data.amenities || undefined,
+          address: data.address || undefined,
+          operational_hours: data.operational_hours || undefined,
+          best_time_to_visit: data.best_time_to_visit || undefined,
+          google_maps_url: data.google_maps_url || undefined,
+          image_url: data.image_url || undefined,
           price: data.price || 0,
-          category: data.category,
-          rating: data.rating,
-          long_description: data.long_description,
-          full_location: data.full_location,
-          reviews_count: data.reviews_count,
-          slug: data.slug,
-          created_at: data.created_at,
-          updated_at: data.updated_at
+          category: data.category || undefined,
+          rating: data.rating || undefined,
+          long_description: data.long_description || undefined,
+          full_location: data.full_location || undefined,
+          reviews_count: data.reviews_count || undefined,
+          slug: data.slug || undefined,
+          created_at: data.created_at || undefined,
+          updated_at: data.updated_at || undefined
         };
         
         setDestination(typedDestination);
@@ -195,12 +196,12 @@ const DestinationDetail = () => {
             id: ticket.id,
             name: ticket.name,
             price: typeof ticket.price === 'number' ? ticket.price : 0,
-            description: ticket.description,
-            capacity: ticket.capacity,
-            validity_duration: ticket.validity_duration,
+            description: ticket.description || undefined,
+            capacity: ticket.capacity || undefined,
+            validity_duration: ticket.validity_duration || undefined,
             destination_id: ticket.destination_id || data.id,
-            created_at: ticket.created_at,
-            updated_at: ticket.updated_at
+            created_at: ticket.created_at || undefined,
+            updated_at: ticket.updated_at || undefined
           }));
           
           setTicketTypes(typedTickets);
