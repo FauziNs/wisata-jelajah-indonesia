@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -14,10 +13,7 @@ export const destinationFormSchema = z.object({
   fullDescription: z.string().min(10, { message: "Deskripsi lengkap wajib diisi" }),
   category: z.string({ required_error: "Pilih kategori" }),
   status: z.string().optional(),
-  price: z.string().transform((val) => {
-    const num = Number(val);
-    return isNaN(num) ? 0 : num;
-  }),
+  price: z.coerce.number().nonnegative({ message: "Harga tidak boleh negatif" }),
   
   // Location
   province: z.string({ required_error: "Pilih provinsi" }),
@@ -67,7 +63,7 @@ export type DestinationFormValues = z.infer<typeof destinationFormSchema>;
 
 export const defaultValues: Partial<DestinationFormValues> = {
   status: "Regular",
-  price: "0",
+  price: 0,
   operationalHours: {
     monday: { isOpen: true, openTime: "08:00", closeTime: "17:00" },
     tuesday: { isOpen: true, openTime: "08:00", closeTime: "17:00" },

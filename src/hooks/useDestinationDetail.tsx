@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -162,24 +161,26 @@ export const useDestinationDetail = (id: string | undefined) => {
         }
       } else {
         // Use dummy ticket data if no Supabase
-        setTicketTypes([
-          {
-            id: '1',
-            name: 'Tiket Dewasa',
-            price: 50000,
-            description: 'Untuk pengunjung berusia 12 tahun ke atas',
-            capacity: 'Tidak terbatas',
-            validity_duration: '1'
-          },
-          {
-            id: '2',
-            name: 'Tiket Anak-anak',
-            price: 25000,
-            description: 'Untuk pengunjung berusia 5-11 tahun',
-            capacity: 'Tidak terbatas',
-            validity_duration: '1'
-          }
-        ]);
+        if (!supabase || (supabase && !ticketTypes.length)) {
+          setTicketTypes([
+            {
+              id: '1',
+              name: 'Tiket Dewasa',
+              price: 50000,
+              description: 'Untuk pengunjung berusia 12 tahun ke atas',
+              capacity: 'Tidak terbatas',
+              validity_duration: '1'
+            },
+            {
+              id: '2',
+              name: 'Tiket Anak-anak',
+              price: 25000,
+              description: 'Untuk pengunjung berusia 5-11 tahun',
+              capacity: 'Tidak terbatas',
+              validity_duration: '1'
+            }
+          ]);
+        }
       }
     } catch (error) {
       console.error('Error fetching destination details:', error);
