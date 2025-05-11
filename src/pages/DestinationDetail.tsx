@@ -107,7 +107,7 @@ const DestinationDetail = () => {
     }
 
     fetchDestinationData(identifier);
-  }, [id, slug, isAuthenticated, user]);
+  }, [id, slug, isAuthenticated, user, navigate, toast]);
 
   const fetchDestinationData = async (identifier: string) => {
     try {
@@ -136,7 +136,22 @@ const DestinationDetail = () => {
 
       if (data) {
         console.log("Found destination:", data);
-        setDestination(data as DestinationType);
+        const typedDestination: DestinationType = {
+          id: data.id,
+          name: data.name,
+          location: data.location,
+          image_url: data.image_url || undefined,
+          price: data.price,
+          description: data.description,
+          category: data.category || undefined,
+          rating: data.rating,
+          operational_hours: data.operational_hours || undefined,
+          amenities: data.amenities || undefined,
+          address: data.address || undefined,
+          slug: data.slug || undefined
+        };
+        
+        setDestination(typedDestination);
         
         // Fetch ticket types
         const { data: ticketData, error: ticketError } = await supabase
@@ -146,8 +161,18 @@ const DestinationDetail = () => {
 
         if (!ticketError && ticketData && ticketData.length > 0) {
           console.log("Found tickets:", ticketData);
-          setTicketTypes(ticketData as TicketType[]);
-          setSelectedTicket(ticketData[0] as TicketType); // Select first ticket by default
+          const typedTickets: TicketType[] = ticketData.map(ticket => ({
+            id: ticket.id,
+            name: ticket.name,
+            price: ticket.price,
+            description: ticket.description || undefined,
+            capacity: ticket.capacity || undefined,
+            validity_duration: ticket.validity_duration || undefined,
+            destination_id: ticket.destination_id || undefined
+          }));
+          
+          setTicketTypes(typedTickets);
+          setSelectedTicket(typedTickets[0]); // Select first ticket by default
         }
 
         // Check if destination is saved
@@ -439,7 +464,7 @@ const DestinationDetail = () => {
             {/* Destination Header */}
             <div className="mb-6">
               <div className="flex flex-wrap justify-between items-start mb-2">
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">{destination.name}</h1>
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">{destination?.name}</h1>
                 
                 <Button
                   variant={isSaved ? "secondary" : "outline"}
@@ -593,9 +618,9 @@ const DestinationDetail = () => {
                   <div>
                     <Label htmlFor="ticket-type">Pilih Jenis Tiket</Label>
                     <Select 
-                      value={selectedTicket?.id?.toString()}
+                      value={selectedTicket?.id}
                       onValueChange={(value) => {
-                        const ticket = ticketTypes.find(t => t.id.toString() === value);
+                        const ticket = ticketTypes.find(t => t.id === value);
                         if (ticket) setSelectedTicket(ticket);
                       }}
                     >
@@ -606,7 +631,7 @@ const DestinationDetail = () => {
                         <SelectGroup>
                           <SelectLabel>Jenis Tiket</SelectLabel>
                           {ticketTypes.map((ticket) => (
-                            <SelectItem key={String(ticket.id)} value={String(ticket.id)}>
+                            <SelectItem key={ticket.id} value={ticket.id}>
                               {ticket.name} - Rp {ticket.price.toLocaleString('id-ID')}
                             </SelectItem>
                           ))}
