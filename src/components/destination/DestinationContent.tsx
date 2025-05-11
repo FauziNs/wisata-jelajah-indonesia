@@ -1,5 +1,4 @@
 
-import { useState } from 'react';
 import { 
   Tabs,
   TabsContent,
@@ -12,8 +11,7 @@ import DestinationHeader from './DestinationHeader';
 import InformationTab from './InformationTab';
 import TicketTab from './TicketTab';
 import ReviewsTab from './ReviewsTab';
-import { DestinationType } from '@/types/destination';
-import { TicketType } from '@/types/destination';
+import { DestinationType, TicketType } from '@/types/destination';
 
 interface DestinationContentProps {
   destination: DestinationType;

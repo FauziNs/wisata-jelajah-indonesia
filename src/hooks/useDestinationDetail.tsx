@@ -55,7 +55,7 @@ export const useDestinationDetail = (id: string | undefined) => {
             .single();
 
           if (data && !error) {
-            destinationData = data;
+            destinationData = data as DestinationType;
             console.log("Destination data from Supabase:", destinationData);
           } else if (error) {
             console.error("Error fetching from Supabase:", error);
