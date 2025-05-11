@@ -1,3 +1,4 @@
+
 import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
@@ -52,6 +53,7 @@ import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DestinationType, TicketType } from '@/types/destination';
+import TicketTab from '@/components/destination/TicketTab';
 
 const DestinationDetail = () => {
   const { id, slug } = useParams<{ id?: string; slug?: string }>();
@@ -322,18 +324,47 @@ const DestinationDetail = () => {
         throw new Error("Data destinasi tidak valid");
       }
       
-      const { data: sessionData, error: sessionError } = await supabase.functions.invoke("create-checkout", {
+      // Create booking number
+      const bookingNumber = `BK-${Date.now().toString().slice(-8)}`;
+      
+      // Create booking record in database
+      const { data: booking, error: bookingError } = await supabase
+        .from('bookings')
+        .insert({
+          booking_number: bookingNumber,
+          user_id: user?.id,
+          destination_id: destination.id,
+          ticket_type_id: selectedTicket.id,
+          visitor_name: visitorName,
+          visitor_email: visitorEmail,
+          visitor_phone: visitorPhone,
+          visit_date: visitDate,
+          quantity: quantity,
+          total_price: selectedTicket.price * quantity,
+          special_requests: specialRequests,
+          status: 'pending',
+          payment_status: 'unpaid'
+        })
+        .select()
+        .single();
+        
+      if (bookingError) {
+        throw bookingError;
+      }
+      
+      console.log("Booking created:", booking);
+      
+      // Call Stripe checkout function
+      const { data: sessionData, error: sessionError } = await supabase.functions.invoke('create-checkout', {
         body: {
-          destinationId: destination.id,
-          ticketTypeId: selectedTicket.id,
+          bookingId: booking.id,
+          amount: selectedTicket.price * quantity,
+          destinationName: destination.name,
+          ticketName: selectedTicket.name,
           quantity: quantity,
           visitDate: visitDate,
-          visitorInfo: {
-            name: visitorName,
-            email: visitorEmail,
-            phone: visitorPhone,
-            specialRequests: specialRequests
-          }
+          visitorName: visitorName,
+          bookingNumber: bookingNumber
         }
       });
 
@@ -342,6 +373,8 @@ const DestinationDetail = () => {
         throw new Error(sessionError.message || "Unknown error occurred");
       }
 
+      console.log("Stripe session created:", sessionData);
+      
       if (sessionData && sessionData.sessionUrl) {
         // Redirect to Stripe checkout
         window.location.href = sessionData.sessionUrl;
@@ -531,53 +564,11 @@ const DestinationDetail = () => {
               </TabsContent>
 
               <TabsContent value="tiket" className="mt-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {ticketTypes && ticketTypes.length > 0 ? ticketTypes.map((ticket) => (
-                    <Card 
-                      key={String(ticket.id)}
-                      className={`cursor-pointer transition-colors ${selectedTicket && selectedTicket.id === ticket.id ? 'border-primary shadow-md' : 'border-gray-200'}`}
-                      onClick={() => handleTicketSelect(ticket)}
-                    >
-                      <CardContent className="p-6">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h3 className="font-medium text-lg">{ticket.name}</h3>
-                            <p className="text-gray-600 text-sm mt-1">{ticket.description}</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-gray-500 text-xs">Harga</p>
-                            <p className="text-lg font-semibold text-primary">
-                              Rp {ticket.price.toLocaleString('id-ID')}
-                            </p>
-                          </div>
-                        </div>
-                        
-                        <div className="mt-4 text-sm text-gray-500">
-                          <div className="flex items-center mb-1">
-                            <Users className="h-4 w-4 mr-2" />
-                            <span>Kapasitas: {ticket.capacity || 'Tidak terbatas'}</span>
-                          </div>
-                          <div className="flex items-center">
-                            <CalendarCheck className="h-4 w-4 mr-2" />
-                            <span>Validitas: {ticket.validity_duration || '1'} hari</span>
-                          </div>
-                        </div>
-                        
-                        {selectedTicket && selectedTicket.id === ticket.id && (
-                          <div className="mt-2 flex justify-end">
-                            <CheckCircle className="h-5 w-5 text-green-500" />
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  )) : (
-                    <Card className="col-span-2">
-                      <CardContent className="p-6 text-center">
-                        <p className="text-gray-700">Tidak ada tiket tersedia untuk destinasi ini.</p>
-                      </CardContent>
-                    </Card>
-                  )}
-                </div>
+                <TicketTab 
+                  tickets={ticketTypes}
+                  destinationId={destination.id}
+                  isAuthenticated={isAuthenticated}
+                />
               </TabsContent>
 
               <TabsContent value="ulasan" className="mt-4">

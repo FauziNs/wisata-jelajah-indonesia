@@ -68,9 +68,7 @@ const TicketTab = ({ tickets, destinationId, isAuthenticated }: TicketTabProps) 
                     </div>
                     <div className="font-medium">
                       <DollarSign className="mr-2 h-4 w-4 inline-block" />
-                      Rp {typeof ticket.price === 'number' ? 
-                            ticket.price.toLocaleString('id-ID') : 
-                            ticket.price}
+                      Rp {ticket.price.toLocaleString('id-ID')}
                     </div>
                   </div>
                 </AccordionTrigger>
