@@ -18,6 +18,8 @@ export interface DestinationType {
   long_description?: string;
   full_location?: string;
   reviews_count?: number;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface TicketType {
@@ -28,4 +30,6 @@ export interface TicketType {
   capacity?: string;
   validity_duration?: string;
   destination_id?: string;
+  created_at?: string;
+  updated_at?: string;
 }

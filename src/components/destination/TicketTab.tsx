@@ -23,10 +23,8 @@ const TicketTab: React.FC<TicketTabProps> = ({
 
   const handleBuyTicket = (ticketId: string) => {
     if (!isAuthenticated) {
-      toast({
-        title: "Login Diperlukan",
+      toast.error("Login Diperlukan", {
         description: "Silakan login terlebih dahulu untuk membeli tiket",
-        variant: "default",
       });
       navigate('/login', { state: { from: `/destinasi/${destinationId}` } });
       return;

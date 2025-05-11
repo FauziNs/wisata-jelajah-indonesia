@@ -4,7 +4,7 @@ import { AuthProvider } from './context/AuthContext';
 import { Toaster } from 'sonner';
 
 // Public pages
-import Home from './pages/Home';
+import Home from './pages/Index';
 import Register from './pages/auth/Register';
 import AdminRegister from './pages/auth/AdminRegister';
 import Login from './pages/auth/Login';
