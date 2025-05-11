@@ -135,7 +135,7 @@ const DestinationDetail = () => {
 
       if (data) {
         console.log("Found destination:", data);
-        // Create a proper typed destination object that matches our DestinationType interface
+        // Create a properly typed destination object that matches our DestinationType interface
         const typedDestination: DestinationType = {
           id: data.id,
           name: data.name,
@@ -166,6 +166,8 @@ const DestinationDetail = () => {
             name: ticket.name,
             price: ticket.price,
             description: ticket.description || undefined,
+            capacity: undefined, // Adding as undefined to match interface
+            validity_duration: undefined, // Adding as undefined to match interface
             destination_id: ticket.destination_id || undefined
           }));
           
@@ -238,6 +240,7 @@ const DestinationDetail = () => {
     }
   };
 
+  
   const handleSaveDestination = async () => {
     if (!isAuthenticated) {
       toast({
