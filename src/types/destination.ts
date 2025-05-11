@@ -5,7 +5,7 @@ export interface DestinationType {
   name: string;
   location: string;
   image_url?: string;
-  price?: number | string;
+  price?: number;
   description: string;
   category?: string;
   rating?: number;

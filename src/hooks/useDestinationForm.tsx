@@ -14,7 +14,10 @@ export const destinationFormSchema = z.object({
   fullDescription: z.string().min(10, { message: "Deskripsi lengkap wajib diisi" }),
   category: z.string({ required_error: "Pilih kategori" }),
   status: z.string().optional(),
-  price: z.string().transform(val => Number(val) || 0),
+  price: z.string().transform(val => {
+    const num = Number(val);
+    return isNaN(num) ? 0 : num;
+  }),
   
   // Location
   province: z.string({ required_error: "Pilih provinsi" }),

@@ -1,4 +1,3 @@
-
 import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
@@ -163,7 +162,7 @@ const DestinationDetail = () => {
           name: data.name,
           location: data.location,
           image_url: data.image_url || undefined,
-          price: data.price || 0,
+          price: typeof data.price === 'number' ? data.price : 0,
           description: data.description,
           category: data.category || undefined,
           rating: data.rating || undefined,
@@ -171,7 +170,9 @@ const DestinationDetail = () => {
           long_description: data.long_description || undefined,
           full_location: data.full_location || undefined,
           reviews_count: data.reviews_count || undefined,
-          amenities: data.amenities || undefined
+          amenities: data.amenities || undefined,
+          created_at: data.created_at,
+          updated_at: data.updated_at
         };
         
         setDestination(typedDestination);
@@ -188,11 +189,13 @@ const DestinationDetail = () => {
           const typedTickets: TicketType[] = ticketData.map(ticket => ({
             id: ticket.id,
             name: ticket.name,
-            price: ticket.price || typedDestination.price as number || 0,
+            price: typeof ticket.price === 'number' ? ticket.price : 0,
             description: ticket.description || undefined,
             capacity: ticket.capacity || undefined,
             validity_duration: ticket.validity_duration || undefined,
-            destination_id: ticket.destination_id || data.id
+            destination_id: ticket.destination_id || data.id,
+            created_at: ticket.created_at,
+            updated_at: ticket.updated_at
           }));
           
           setTicketTypes(typedTickets);
