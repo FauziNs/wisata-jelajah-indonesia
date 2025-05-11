@@ -157,22 +157,25 @@ const DestinationDetail = () => {
 
       if (data) {
         console.log("Found destination:", data);
-        // Create a properly typed destination object that matches our DestinationType interface
+        // Create a properly typed destination object
         const typedDestination: DestinationType = {
           id: data.id,
           name: data.name,
           location: data.location,
-          image_url: data.image_url || undefined,
-          price: typeof data.price === 'number' ? data.price : 0,
           description: data.description,
-          category: data.category || undefined,
-          rating: data.rating || undefined,
-          operational_hours: data.operational_hours || undefined,
-          long_description: data.long_description || undefined,
-          full_location: data.full_location || undefined,
-          reviews_count: data.reviews_count || undefined,
-          amenities: data.amenities || undefined,
-          address: data.address || undefined,
+          amenities: data.amenities,
+          address: data.address,
+          operational_hours: data.operational_hours,
+          best_time_to_visit: data.best_time_to_visit,
+          google_maps_url: data.google_maps_url,
+          image_url: data.image_url,
+          price: data.price || 0,
+          category: data.category,
+          rating: data.rating,
+          long_description: data.long_description,
+          full_location: data.full_location,
+          reviews_count: data.reviews_count,
+          slug: data.slug,
           created_at: data.created_at,
           updated_at: data.updated_at
         };
@@ -192,9 +195,9 @@ const DestinationDetail = () => {
             id: ticket.id,
             name: ticket.name,
             price: typeof ticket.price === 'number' ? ticket.price : 0,
-            description: ticket.description || undefined,
-            capacity: ticket.capacity || undefined,
-            validity_duration: ticket.validity_duration || undefined,
+            description: ticket.description,
+            capacity: ticket.capacity,
+            validity_duration: ticket.validity_duration,
             destination_id: ticket.destination_id || data.id,
             created_at: ticket.created_at,
             updated_at: ticket.updated_at
@@ -253,7 +256,7 @@ const DestinationDetail = () => {
           {
             id: '1',
             name: 'Tiket Dewasa',
-            price: dummyData.price as number,
+            price: dummyData.price || 50000,
             description: 'Untuk pengunjung berusia 12 tahun ke atas',
             capacity: 'Tidak terbatas',
             validity_duration: '1'
@@ -261,7 +264,7 @@ const DestinationDetail = () => {
           {
             id: '2',
             name: 'Tiket Anak-anak',
-            price: (dummyData.price as number) / 2,
+            price: (dummyData.price || 50000) / 2,
             description: 'Untuk pengunjung berusia 5-11 tahun',
             capacity: 'Tidak terbatas',
             validity_duration: '1'
