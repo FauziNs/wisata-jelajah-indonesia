@@ -208,8 +208,11 @@ const DestinationDetail = () => {
           setSelectedTicket(typedTickets[0]); // Select first ticket by default
         } else {
           // If no tickets found, create a default one based on destination price
+          // Generate a proper UUID for the default ticket
+          const defaultTicketId = crypto.randomUUID();
+          
           const defaultTicket: TicketType = {
-            id: 'default',
+            id: defaultTicketId, // Use a valid UUID instead of "default"
             name: 'Tiket Masuk',
             price: typeof typedDestination.price === 'number' ? typedDestination.price : 50000,
             description: 'Tiket masuk untuk mengunjungi destinasi',
@@ -235,7 +238,9 @@ const DestinationDetail = () => {
         }
       } else {
         console.log("Destination not found, using dummy data");
-        // If no destination found, use dummy data
+        // If no destination found, use dummy data with a valid UUID
+        const dummyTicketId = crypto.randomUUID();
+        
         const dummyData: DestinationType = {
           id: identifier,
           name: 'Pantai Kuta',
@@ -252,10 +257,10 @@ const DestinationDetail = () => {
         
         setDestination(dummyData);
         
-        // Set dummy ticket types
+        // Set dummy ticket types with valid UUIDs
         const dummyTickets: TicketType[] = [
           {
-            id: '1',
+            id: dummyTicketId,
             name: 'Tiket Dewasa',
             price: dummyData.price || 50000,
             description: 'Untuk pengunjung berusia 12 tahun ke atas',
@@ -263,7 +268,7 @@ const DestinationDetail = () => {
             validity_duration: '1'
           },
           {
-            id: '2',
+            id: crypto.randomUUID(),
             name: 'Tiket Anak-anak',
             price: (dummyData.price || 50000) / 2,
             description: 'Untuk pengunjung berusia 5-11 tahun',
@@ -438,14 +443,16 @@ const DestinationDetail = () => {
       // Call Stripe checkout function
       const { data: sessionData, error: sessionError } = await supabase.functions.invoke('create-checkout', {
         body: {
-          bookingId: booking.id,
-          amount: selectedTicket.price * quantity,
-          destinationName: destination.name,
-          ticketName: selectedTicket.name,
+          destinationId: destination.id,
+          ticketTypeId: selectedTicket.id,
           quantity: quantity,
           visitDate: visitDate,
-          visitorName: visitorName,
-          bookingNumber: bookingNumber
+          visitorInfo: {
+            name: visitorName,
+            email: visitorEmail,
+            phone: visitorPhone,
+            specialRequests: specialRequests
+          }
         }
       });
 

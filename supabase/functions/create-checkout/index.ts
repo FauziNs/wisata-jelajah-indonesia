@@ -167,10 +167,11 @@ serve(async (req) => {
       .from("bookings")
       .update({ 
         payment_method: "stripe",
+        session_id: session.id // Add session_id to the booking record
       })
       .eq("id", booking.id);
 
-    logStep("Updated booking with payment method");
+    logStep("Updated booking with payment method and session ID");
 
     // Return the Stripe session URL to redirect the user to the payment page
     return new Response(

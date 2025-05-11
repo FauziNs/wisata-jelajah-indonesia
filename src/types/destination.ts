@@ -1,23 +1,22 @@
 
-// Define shared types for destination and ticket data
 export interface DestinationType {
   id: string;
   name: string;
   location: string;
-  image_url?: string;
-  price?: number;
   description: string;
-  category?: string;
-  rating?: number;
-  operational_hours?: string;
   amenities?: string;
   address?: string;
-  slug?: string;
+  operational_hours?: string;
   best_time_to_visit?: string;
   google_maps_url?: string;
+  image_url?: string;
+  price: number;
+  category?: string;
+  rating?: number;
   long_description?: string;
   full_location?: string;
   reviews_count?: number;
+  slug?: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -29,7 +28,7 @@ export interface TicketType {
   description?: string;
   capacity?: string;
   validity_duration?: string;
-  destination_id?: string;
+  destination_id: string;
   created_at?: string;
   updated_at?: string;
 }
