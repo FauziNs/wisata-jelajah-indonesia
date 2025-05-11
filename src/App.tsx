@@ -19,8 +19,8 @@ import DestinationForm from './pages/admin/DestinationForm';
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
+    <Router>
+      <AuthProvider>
         <Routes>
           {/* Public routes */}
           <Route index element={<Home />} />
@@ -38,8 +38,8 @@ function App() {
           </Route>
         </Routes>
         <Toaster position="top-right" />
-      </Router>
-    </AuthProvider>
+      </AuthProvider>
+    </Router>
   );
 }
 

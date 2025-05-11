@@ -1,9 +1,10 @@
 
 import { Card } from '@/components/ui/card';
 import { Clock, Calendar, MapPin, ExternalLink } from 'lucide-react';
+import { DestinationType } from '@/types/destination';
 
 interface InformationTabProps {
-  destination: any;
+  destination: DestinationType;
 }
 
 const InformationTab = ({ destination }: InformationTabProps) => {

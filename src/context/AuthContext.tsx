@@ -2,7 +2,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase, testSupabaseConnection } from '@/integrations/supabase/client';
-import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 
 interface AuthContextType {
@@ -27,7 +26,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -46,20 +44,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             title: "Login berhasil",
             description: "Selamat datang kembali!",
           });
-          // Redirect to homepage after successful login
-          navigate('/');
+          // We removed the navigate call here since it should be handled by the component
         } else if (event === 'SIGNED_OUT') {
           console.log('User signed out');
           toast({
             title: "Logout berhasil",
             description: "Anda telah keluar dari akun",
           });
-          navigate('/');
+          // We removed the navigate call here since it should be handled by the component
         } else if (event === 'USER_UPDATED') {
           console.log('User updated');
         } else if (event === 'PASSWORD_RECOVERY') {
           console.log('Password recovery event');
-          navigate('/reset-password');
+          // We removed the navigate call here since it should be handled by the component
         }
       }
     );
@@ -90,7 +87,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.log('Cleaning up auth subscription');
       subscription.unsubscribe();
     };
-  }, [navigate, toast]);
+  }, [toast]);
 
   const testConnection = async () => {
     return await testSupabaseConnection();
