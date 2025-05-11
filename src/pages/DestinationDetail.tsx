@@ -1,4 +1,3 @@
-
 import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
@@ -136,19 +135,19 @@ const DestinationDetail = () => {
 
       if (data) {
         console.log("Found destination:", data);
+        // Create a proper typed destination object that matches our DestinationType interface
         const typedDestination: DestinationType = {
           id: data.id,
           name: data.name,
           location: data.location,
           image_url: data.image_url || undefined,
-          price: data.price,
           description: data.description,
           category: data.category || undefined,
-          rating: data.rating,
+          rating: data.rating || undefined,
           operational_hours: data.operational_hours || undefined,
-          amenities: data.amenities || undefined,
-          address: data.address || undefined,
-          slug: data.slug || undefined
+          long_description: data.long_description || undefined,
+          full_location: data.full_location || undefined,
+          reviews_count: data.reviews_count || undefined
         };
         
         setDestination(typedDestination);
@@ -161,13 +160,12 @@ const DestinationDetail = () => {
 
         if (!ticketError && ticketData && ticketData.length > 0) {
           console.log("Found tickets:", ticketData);
+          // Create properly typed ticket objects
           const typedTickets: TicketType[] = ticketData.map(ticket => ({
             id: ticket.id,
             name: ticket.name,
             price: ticket.price,
             description: ticket.description || undefined,
-            capacity: ticket.capacity || undefined,
-            validity_duration: ticket.validity_duration || undefined,
             destination_id: ticket.destination_id || undefined
           }));
           
