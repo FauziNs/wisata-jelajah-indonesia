@@ -43,9 +43,12 @@ const AdminRegister = () => {
       return;
     }
 
-    // Simple admin token validation (in a real app, use a more secure method)
-    if (formData.adminToken !== 'admin123') {
-      toast.error('Token admin tidak valid');
+    // Fixed admin token - this is for demo purposes only
+    // In a real app, you should use a more secure method
+    const ADMIN_TOKEN = "admin123";
+    
+    if (formData.adminToken !== ADMIN_TOKEN) {
+      toast.error('Token admin tidak valid. Gunakan token: admin123');
       return;
     }
 
@@ -101,6 +104,9 @@ const AdminRegister = () => {
               <CardDescription>
                 Buat akun admin baru untuk mengelola aplikasi
               </CardDescription>
+              <div className="mt-2 p-2 bg-blue-50 text-blue-600 rounded-md text-sm">
+                Untuk demo gunakan token admin: <strong>admin123</strong>
+              </div>
             </CardHeader>
             
             <CardContent>

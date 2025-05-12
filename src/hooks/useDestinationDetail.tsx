@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -125,7 +126,8 @@ export const useDestinationDetail = (id: string | undefined) => {
                 price: 50000,
                 description: 'Untuk pengunjung berusia 12 tahun ke atas',
                 capacity: 'Tidak terbatas',
-                validity_duration: '1'
+                validity_duration: '1',
+                destination_id: id || '1'
               },
               {
                 id: '2',
@@ -133,7 +135,8 @@ export const useDestinationDetail = (id: string | undefined) => {
                 price: 25000,
                 description: 'Untuk pengunjung berusia 5-11 tahun',
                 capacity: 'Tidak terbatas',
-                validity_duration: '1'
+                validity_duration: '1',
+                destination_id: id || '1'
               }
             ]);
           }
@@ -147,7 +150,8 @@ export const useDestinationDetail = (id: string | undefined) => {
               price: 50000,
               description: 'Untuk pengunjung berusia 12 tahun ke atas',
               capacity: 'Tidak terbatas',
-              validity_duration: '1'
+              validity_duration: '1',
+              destination_id: id || '1'
             },
             {
               id: '2',
@@ -155,7 +159,8 @@ export const useDestinationDetail = (id: string | undefined) => {
               price: 25000,
               description: 'Untuk pengunjung berusia 5-11 tahun',
               capacity: 'Tidak terbatas',
-              validity_duration: '1'
+              validity_duration: '1',
+              destination_id: id || '1'
             }
           ]);
         }
@@ -169,7 +174,8 @@ export const useDestinationDetail = (id: string | undefined) => {
               price: 50000,
               description: 'Untuk pengunjung berusia 12 tahun ke atas',
               capacity: 'Tidak terbatas',
-              validity_duration: '1'
+              validity_duration: '1',
+              destination_id: id || '1'
             },
             {
               id: '2',
@@ -177,7 +183,8 @@ export const useDestinationDetail = (id: string | undefined) => {
               price: 25000,
               description: 'Untuk pengunjung berusia 5-11 tahun',
               capacity: 'Tidak terbatas',
-              validity_duration: '1'
+              validity_duration: '1',
+              destination_id: id || '1'
             }
           ]);
         }

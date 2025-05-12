@@ -5,6 +5,7 @@ import AdminSidebar from '@/components/admin/AdminSidebar';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 const AdminLayout = () => {
   const { user, isLoading } = useAuth();
@@ -26,10 +27,21 @@ const AdminLayout = () => {
           .eq('id', user.id)
           .single();
           
-        if (error || !data || data.role !== 'admin') {
-          console.log('Access denied: User is not an admin', data);
+        if (error) {
+          console.error('Error fetching user role:', error);
+          toast.error('Terjadi kesalahan saat memverifikasi akses admin');
           navigate('/');
+          return;
         }
+        
+        if (!data || data.role !== 'admin') {
+          console.log('Access denied: User is not an admin', data);
+          toast.error('Akses ditolak: Anda bukan admin');
+          navigate('/');
+          return;
+        }
+        
+        console.log('Admin access granted:', data);
       }
     };
 

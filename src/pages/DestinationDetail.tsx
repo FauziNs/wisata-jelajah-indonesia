@@ -1,4 +1,3 @@
-
 import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
@@ -260,20 +259,22 @@ const DestinationDetail = () => {
         // Set dummy ticket types with valid UUIDs
         const dummyTickets: TicketType[] = [
           {
-            id: dummyTicketId,
+            id: `${crypto.randomUUID()}`,
             name: 'Tiket Dewasa',
-            price: dummyData.price || 50000,
+            price: 50000,
             description: 'Untuk pengunjung berusia 12 tahun ke atas',
             capacity: 'Tidak terbatas',
-            validity_duration: '1'
+            validity_duration: '1 hari',
+            destination_id: id || '1'
           },
           {
-            id: crypto.randomUUID(),
+            id: `${crypto.randomUUID()}`,
             name: 'Tiket Anak-anak',
-            price: (dummyData.price || 50000) / 2,
+            price: 25000,
             description: 'Untuk pengunjung berusia 5-11 tahun',
             capacity: 'Tidak terbatas',
-            validity_duration: '1'
+            validity_duration: '1 hari',
+            destination_id: id || '1'
           }
         ];
         
