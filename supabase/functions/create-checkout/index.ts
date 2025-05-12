@@ -3,15 +3,10 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.21.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
+// Set up CORS headers for browser requests
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
-
-// Helper logging function to debug Stripe integration
-const logStep = (step: string, details?: any) => {
-  const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
-  console.log(`[CREATE-CHECKOUT] ${step}${detailsStr}`);
 };
 
 serve(async (req) => {
@@ -21,115 +16,99 @@ serve(async (req) => {
   }
 
   try {
-    logStep("Starting checkout process");
-    
-    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
-    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
-    const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-    
-    // Create a Supabase client with the anon key for authentication
-    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
+    // Parse the request body
+    const { ticketId, destinationId, quantity, visitorName, visitorEmail, visitorPhone, visitDate, specialRequests } = await req.json();
 
-    // Get the authorization header from the request
+    // Validate required parameters
+    if (!ticketId || !destinationId || !quantity || !visitorName || !visitorEmail || !visitDate) {
+      return new Response(
+        JSON.stringify({ error: "Missing required parameters for booking" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Get the authenticated user from the request
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      throw new Error("Missing Authorization header");
+      return new Response(
+        JSON.stringify({ error: "No authorization token provided" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
     
-    logStep("Got authorization header");
+    // Create a Supabase client with anonymous key for the authentication
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
+    const supabase = createClient(supabaseUrl, supabaseAnonKey);
     
-    // Get the token from the authorization header
+    // Extract the token from the header
     const token = authHeader.replace("Bearer ", "");
+    const { data: userData, error: userError } = await supabase.auth.getUser(token);
     
-    // Verify the user
-    const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
-    if (userError) throw new Error(`Authentication error: ${userError.message}`);
-    
-    const user = userData.user;
-    if (!user) throw new Error("User not found");
-    
-    logStep("Authenticated user", { userId: user.id, email: user.email });
-
-    // Parse the request body
-    const { destinationId, ticketTypeId, quantity, visitDate, visitorInfo } = await req.json();
-    
-    if (!destinationId || !ticketTypeId || !quantity) {
-      throw new Error("Missing required fields");
+    if (userError) {
+      return new Response(
+        JSON.stringify({ error: "Authentication error", details: userError.message }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
     
-    logStep("Parsed request body", { destinationId, ticketTypeId, quantity, visitDate });
-
-    // Create a Supabase client with the service role key for database access
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey);
+    const userId = userData.user?.id;
     
-    // Get destination and ticket information
-    const { data: destination, error: destError } = await supabaseAdmin
-      .from("destinations")
-      .select("name, location")
-      .eq("id", destinationId)
+    // Get ticket and destination information
+    const { data: ticketData, error: ticketError } = await supabase
+      .from('ticket_types')
+      .select('*, destinations(name, location)')
+      .eq('id', ticketId)
       .single();
+      
+    if (ticketError || !ticketData) {
+      return new Response(
+        JSON.stringify({ error: "Unable to find ticket information" }),
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
     
-    if (destError) throw new Error(`Error fetching destination: ${destError.message}`);
-    logStep("Got destination details", destination);
+    // Create Stripe instance with secret key
+    const stripe = new Stripe("sk_test_51RN2V1PBTExOqd1wRoyD0wOWkFygRMxgC9KukQArWWiYug364mzW4ohXQ2N49wiBKCqCBiTHDljJck2VLqUu34qR00lWjhXSVT", {
+      apiVersion: "2023-10-16",
+    });
     
-    const { data: ticketType, error: ticketError } = await supabaseAdmin
-      .from("ticket_types")
-      .select("name, price")
-      .eq("id", ticketTypeId)
-      .single();
+    const totalPrice = ticketData.price * quantity;
+    const destinationName = ticketData.destinations?.name || "Destinasi Wisata";
+    const ticketName = ticketData.name;
     
-    if (ticketError) throw new Error(`Error fetching ticket type: ${ticketError.message}`);
-    logStep("Got ticket details", ticketType);
+    // Generate a unique booking number
+    const bookingNumber = `WJ-${Date.now().toString().slice(-8)}-${Math.floor(Math.random() * 1000)}`;
     
-    // Calculate total price
-    const unitPrice = ticketType.price;
-    const totalPrice = unitPrice * quantity;
-    
-    // Create a unique booking number
-    const bookingNumber = `BK-${Math.floor(Math.random() * 900000) + 100000}`;
-    
-    // Create a booking record in the database
-    const { data: booking, error: bookingError } = await supabaseAdmin
-      .from("bookings")
+    // Create booking record in database
+    const { data: bookingData, error: bookingError } = await supabase
+      .from('bookings')
       .insert({
         booking_number: bookingNumber,
-        user_id: user.id,
+        user_id: userId,
         destination_id: destinationId,
-        ticket_type_id: ticketTypeId,
+        ticket_type_id: ticketId,
         quantity: quantity,
         total_price: totalPrice,
         visit_date: visitDate,
-        visitor_name: visitorInfo?.name || user.user_metadata?.full_name || "Guest",
-        visitor_email: visitorInfo?.email || user.email,
-        visitor_phone: visitorInfo?.phone || user.user_metadata?.phone || "",
-        payment_status: "pending",
-        status: "pending",
-        special_requests: visitorInfo?.specialRequests || "",
+        visitor_name: visitorName,
+        visitor_email: visitorEmail,
+        visitor_phone: visitorPhone,
+        special_requests: specialRequests,
+        status: 'pending',
+        payment_status: 'unpaid'
       })
       .select()
       .single();
     
     if (bookingError) {
-      logStep("Error creating booking", bookingError);
-      throw new Error(`Error creating booking: ${bookingError.message}`);
+      return new Response(
+        JSON.stringify({ error: "Failed to create booking", details: bookingError.message }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
     
-    logStep("Created booking", { bookingId: booking.id, bookingNumber });
-
-    // Initialize Stripe with the secret key
-    const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
-    if (!stripeSecretKey) {
-      throw new Error("STRIPE_SECRET_KEY environment variable not set");
-    }
-    
-    const stripe = new Stripe(stripeSecretKey, {
-      apiVersion: "2023-10-16",
-    });
-
-    const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
-    logStep("Webhook secret", { webhookSecretExists: !!webhookSecret });
-
-    // Create a Stripe checkout session
+    // Create Stripe checkout session
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       line_items: [
@@ -137,62 +116,53 @@ serve(async (req) => {
           price_data: {
             currency: "idr",
             product_data: {
-              name: `${ticketType.name} - ${destination.name}`,
-              description: `${quantity} tiket untuk ${destination.name}, ${destination.location}`,
+              name: `Tiket ${ticketName} - ${destinationName}`,
+              description: `${quantity} tiket untuk kunjungan pada ${new Date(visitDate).toLocaleDateString('id-ID')}`,
             },
-            unit_amount: Math.round(unitPrice * 100), // Stripe uses cents
+            unit_amount: Math.round(ticketData.price * 100), // Stripe requires amounts in smallest currency unit (cents)
           },
-          quantity: 1, // We already multiplied by quantity for the total
+          quantity: quantity,
         },
       ],
       mode: "payment",
-      success_url: `${req.headers.get("origin")}/payment-success?booking_id=${booking.id}`,
-      cancel_url: `${req.headers.get("origin")}/payment-cancel?booking_id=${booking.id}`,
-      client_reference_id: booking.id,
-      customer_email: user.email,
+      success_url: `${req.headers.get("origin")}/payment-success?session_id={CHECKOUT_SESSION_ID}&booking_id=${bookingData.id}`,
+      cancel_url: `${req.headers.get("origin")}/payment-cancel?booking_id=${bookingData.id}`,
+      client_reference_id: bookingData.id,
+      customer_email: visitorEmail,
       metadata: {
-        booking_id: booking.id,
-        booking_number: bookingNumber,
-        user_id: user.id,
-      },
-    });
-
-    logStep("Created Stripe checkout session", { 
-      sessionId: session.id, 
-      url: session.url ? "Session URL exists" : "No session URL"
+        booking_id: bookingData.id,
+        booking_number: bookingNumber
+      }
     });
 
     // Update the booking with the Stripe session ID
-    await supabaseAdmin
-      .from("bookings")
-      .update({ 
-        payment_method: "stripe",
-        session_id: session.id // Add session_id to the booking record
-      })
-      .eq("id", booking.id);
-
-    logStep("Updated booking with payment method and session ID");
-
-    // Return the Stripe session URL to redirect the user to the payment page
+    await supabase
+      .from('bookings')
+      .update({ payment_method: 'stripe', stripe_session_id: session.id })
+      .eq('id', bookingData.id);
+    
+    // Return the checkout session URL to redirect the user
     return new Response(
       JSON.stringify({ 
-        sessionUrl: session.url,
-        bookingId: booking.id,
+        success: true,
+        sessionId: session.id,
+        url: session.url,
+        bookingId: bookingData.id,
         bookingNumber: bookingNumber
       }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
+      { 
+        status: 200, 
+        headers: { ...corsHeaders, "Content-Type": "application/json" } 
       }
     );
-  } catch (error) {
-    logStep("Checkout error", error);
     
+  } catch (error) {
+    console.error("Checkout error:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 400,
+      JSON.stringify({ error: "Internal server error", details: error.message }),
+      { 
+        status: 500, 
+        headers: { ...corsHeaders, "Content-Type": "application/json" } 
       }
     );
   }

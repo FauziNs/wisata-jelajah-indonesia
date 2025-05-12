@@ -1,8 +1,11 @@
+
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
 
 // Define the destination form schema
 export const destinationFormSchema = z.object({
@@ -89,6 +92,7 @@ export const defaultValues: Partial<DestinationFormValues> = {
 };
 
 export const useDestinationForm = () => {
+  const navigate = useNavigate();
   const form = useForm<DestinationFormValues>({
     resolver: zodResolver(destinationFormSchema),
     defaultValues,
@@ -99,22 +103,74 @@ export const useDestinationForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Handle form submission
-  const onSubmit = (data: DestinationFormValues) => {
+  const onSubmit = async (data: DestinationFormValues) => {
     setIsSubmitting(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      console.log("Form submitted:", data);
+    try {
+      // Create a destination object that matches our database schema
+      const destinationData = {
+        name: data.name,
+        description: data.shortDescription,
+        long_description: data.fullDescription,
+        location: `${data.city}, ${data.province}`,
+        full_location: data.fullAddress || `${data.district}, ${data.city}, ${data.province}`,
+        category: data.category,
+        price: data.price,
+        operational_hours: JSON.stringify(data.operationalHours),
+        image_url: typeof data.mainImage === 'string' ? data.mainImage : null,
+        // Add other fields as needed
+      };
+      
+      // Insert data into Supabase
+      const { data: destinationResponse, error } = await supabase
+        .from('destinations')
+        .insert(destinationData)
+        .select()
+        .single();
+      
+      if (error) {
+        throw error;
+      }
+      
+      // If we have tickets data, add them too
+      if (data.tickets && data.tickets.length > 0 && destinationResponse.id) {
+        const ticketsData = data.tickets
+          .filter(ticket => ticket.name && ticket.price) // Only process tickets that have a name and price
+          .map(ticket => ({
+            name: ticket.name || '',
+            price: parseInt(ticket.price || '0'),
+            description: ticket.description || '',
+            destination_id: destinationResponse.id
+          }));
+        
+        if (ticketsData.length > 0) {
+          const { error: ticketsError } = await supabase
+            .from('ticket_types')
+            .insert(ticketsData);
+          
+          if (ticketsError) {
+            console.error('Error adding tickets:', ticketsError);
+            toast.error('Destinasi berhasil disimpan tetapi gagal menambahkan tiket');
+          }
+        }
+      }
+      
       toast.success("Destinasi berhasil disimpan!");
+      // Wait a moment before redirecting to make sure the user sees the success toast
+      setTimeout(() => {
+        navigate('/admin/destinations');
+      }, 1500);
+    } catch (error: any) {
+      console.error('Error saving destination:', error);
+      toast.error(error.message || 'Gagal menyimpan destinasi');
+    } finally {
       setIsSubmitting(false);
-      // In a real app, you would redirect to the destinations list or show more feedback
-    }, 1500);
+    }
   };
 
   const handleCancel = () => {
     if (confirm("Apakah Anda yakin ingin membatalkan? Semua perubahan akan hilang.")) {
-      // Navigate to destinations list
-      window.location.href = "/admin/destinations";
+      navigate('/admin/destinations');
     }
   };
 

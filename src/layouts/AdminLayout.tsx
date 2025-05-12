@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import AdminSidebar from '@/components/admin/AdminSidebar';
 import { useAuth } from '@/context/AuthContext';
@@ -10,16 +10,22 @@ import { toast } from 'sonner';
 const AdminLayout = () => {
   const { user, isLoading } = useAuth();
   const navigate = useNavigate();
+  const [adminCheckComplete, setAdminCheckComplete] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     const checkAdminAccess = async () => {
-      if (!isLoading && !user) {
-        // If not logged in, redirect to login page
-        navigate('/login?redirect=/admin');
-        return;
-      }
-      
-      if (!isLoading && user) {
+      try {
+        if (isLoading) return;
+        
+        if (!user) {
+          console.log('User not logged in, redirecting to login...');
+          // If not logged in, redirect to login page
+          navigate('/login?redirect=/admin');
+          return;
+        }
+        
+        console.log('Checking admin role for user:', user.id);
         // Check if the user has admin role
         const { data, error } = await supabase
           .from('profiles')
@@ -42,6 +48,12 @@ const AdminLayout = () => {
         }
         
         console.log('Admin access granted:', data);
+        setIsAdmin(true);
+        setAdminCheckComplete(true);
+      } catch (error) {
+        console.error('Error in admin check:', error);
+        toast.error('Terjadi kesalahan saat memverifikasi akses');
+        navigate('/');
       }
     };
 
@@ -49,12 +61,17 @@ const AdminLayout = () => {
   }, [user, isLoading, navigate]);
 
   // Show loading indicator while checking authentication
-  if (isLoading) {
+  if (isLoading || !adminCheckComplete) {
     return (
       <div className="h-screen w-full flex items-center justify-center">
         <Loader2 className="w-10 h-10 text-primary animate-spin" />
       </div>
     );
+  }
+
+  // If user is not admin, we shouldn't render anything (we should have redirected)
+  if (!isAdmin) {
+    return null;
   }
 
   // If user is authenticated and admin check is complete, show admin layout

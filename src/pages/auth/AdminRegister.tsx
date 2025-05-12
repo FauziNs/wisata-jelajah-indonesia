@@ -18,8 +18,7 @@ const AdminRegister = () => {
     email: '',
     password: '',
     confirmPassword: '',
-    fullName: '',
-    adminToken: '' // Special token to verify admin registration
+    fullName: ''
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -40,15 +39,6 @@ const AdminRegister = () => {
 
     if (formData.password !== formData.confirmPassword) {
       toast.error('Password tidak cocok');
-      return;
-    }
-
-    // Fixed admin token - this is for demo purposes only
-    // In a real app, you should use a more secure method
-    const ADMIN_TOKEN = "admin123";
-    
-    if (formData.adminToken !== ADMIN_TOKEN) {
-      toast.error('Token admin tidak valid. Gunakan token: admin123');
       return;
     }
 
@@ -104,9 +94,6 @@ const AdminRegister = () => {
               <CardDescription>
                 Buat akun admin baru untuk mengelola aplikasi
               </CardDescription>
-              <div className="mt-2 p-2 bg-blue-50 text-blue-600 rounded-md text-sm">
-                Untuk demo gunakan token admin: <strong>admin123</strong>
-              </div>
             </CardHeader>
             
             <CardContent>
@@ -154,18 +141,6 @@ const AdminRegister = () => {
                     type="password"
                     placeholder="Konfirmasi password"
                     value={formData.confirmPassword}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="adminToken">Token Admin</Label>
-                  <Input
-                    id="adminToken"
-                    type="text"
-                    placeholder="Masukkan token admin"
-                    value={formData.adminToken}
                     onChange={handleChange}
                     required
                   />

@@ -1,6 +1,6 @@
 
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { 
@@ -26,64 +26,55 @@ import {
   Eye, 
   Filter, 
   Star, 
-  MapPin 
+  MapPin,
+  Loader2 
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-
-// Sample data for destinations
-const destinations = [
-  {
-    id: 1,
-    name: "Pantai Kuta",
-    location: "Bali",
-    category: "Pantai",
-    status: "Featured",
-    createdAt: "2023-04-15",
-    image: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=200&h=100",
-  },
-  {
-    id: 2,
-    name: "Candi Borobudur",
-    location: "Jawa Tengah",
-    category: "Wisata Sejarah",
-    status: "Regular",
-    createdAt: "2023-04-12",
-    image: "https://images.unsplash.com/photo-1564511287568-54483a74087b?auto=format&fit=crop&w=200&h=100",
-  },
-  {
-    id: 3,
-    name: "Kawah Putih",
-    location: "Jawa Barat",
-    category: "Wisata Alam",
-    status: "Highlight",
-    createdAt: "2023-04-10",
-    image: "https://images.unsplash.com/photo-1535249677413-75a5175a0b17?auto=format&fit=crop&w=200&h=100",
-  },
-  {
-    id: 4,
-    name: "Taman Mini Indonesia Indah",
-    location: "DKI Jakarta",
-    category: "Edukasi",
-    status: "Regular",
-    createdAt: "2023-04-08",
-    image: "https://images.unsplash.com/photo-1589182456208-55142fe24607?auto=format&fit=crop&w=200&h=100",
-  },
-  {
-    id: 5,
-    name: "Malioboro",
-    location: "DI Yogyakarta",
-    category: "Pusat Belanja",
-    status: "Special",
-    createdAt: "2023-04-05",
-    image: "https://images.unsplash.com/photo-1551963831-b3b1ca40c98e?auto=format&fit=crop&w=200&h=100",
-  },
-];
+import { supabase } from '@/integrations/supabase/client';
+import { DestinationType } from '@/types/destination';
 
 const DestinationsList = () => {
-  const [searchTerm, setSearchTerm] = React.useState("");
-  const [selectedCategory, setSelectedCategory] = React.useState("");
-  const [selectedStatus, setSelectedStatus] = React.useState("");
+  const navigate = useNavigate();
+  const [destinations, setDestinations] = useState<DestinationType[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState("");
+
+  // Fetch destinations data from Supabase
+  useEffect(() => {
+    const fetchDestinations = async () => {
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from('destinations')
+          .select('*');
+        
+        if (error) {
+          throw error;
+        }
+        
+        // Map the data to include status (we'll store this in the future)
+        const statusOptions = ['Regular', 'Featured', 'Highlight', 'Special'];
+        const destinationsWithStatus = data.map(dest => ({
+          ...dest,
+          status: dest.category === 'Popular' ? 'Featured' : 
+                 dest.rating && dest.rating >= 4.5 ? 'Highlight' : 
+                 dest.price && dest.price > 100000 ? 'Special' : 'Regular'
+        }));
+        
+        setDestinations(destinationsWithStatus);
+      } catch (error) {
+        console.error('Error fetching destinations:', error);
+        toast.error('Gagal memuat data destinasi');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDestinations();
+  }, []);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -98,11 +89,32 @@ const DestinationsList = () => {
     }
   };
 
-  const handleDelete = (id: number, name: string) => {
+  const handleDelete = async (id: string, name: string) => {
     if (confirm(`Apakah Anda yakin ingin menghapus destinasi "${name}"?`)) {
-      // In a real app, you would call an API to delete the destination
-      toast.success(`Destinasi "${name}" berhasil dihapus`);
+      try {
+        const { error } = await supabase
+          .from('destinations')
+          .delete()
+          .eq('id', id);
+          
+        if (error) throw error;
+        
+        // Update the local state to remove the deleted destination
+        setDestinations(destinations.filter(dest => dest.id !== id));
+        toast.success(`Destinasi "${name}" berhasil dihapus`);
+      } catch (error) {
+        console.error('Error deleting destination:', error);
+        toast.error('Gagal menghapus destinasi');
+      }
     }
+  };
+
+  const handleViewDestination = (id: string) => {
+    window.open(`/destinasi/${id}`, '_blank');
+  };
+
+  const handleEditDestination = (id: string) => {
+    navigate(`/admin/destinations/edit/${id}`);
   };
 
   return (
@@ -191,7 +203,16 @@ const DestinationsList = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {destinations
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center py-8">
+                  <div className="flex justify-center items-center">
+                    <Loader2 className="h-6 w-6 text-primary animate-spin mr-2" />
+                    <span>Memuat data...</span>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : destinations
               .filter(dest => 
                 (!searchTerm || dest.name.toLowerCase().includes(searchTerm.toLowerCase())) &&
                 (!selectedCategory || selectedCategory === "all" || dest.category === selectedCategory) &&
@@ -202,7 +223,7 @@ const DestinationsList = () => {
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <img 
-                        src={destination.image} 
+                        src={destination.image_url || 'https://images.unsplash.com/photo-1589182456208-55142fe24607?auto=format&fit=crop&w=200&h=100'} 
                         alt={destination.name}
                         className="w-12 h-12 rounded object-cover" 
                       />
@@ -215,19 +236,29 @@ const DestinationsList = () => {
                       {destination.location}
                     </div>
                   </TableCell>
-                  <TableCell>{destination.category}</TableCell>
+                  <TableCell>{destination.category || 'Uncategorized'}</TableCell>
                   <TableCell>
-                    <Badge variant="outline" className={getStatusColor(destination.status)}>
-                      {destination.status}
+                    <Badge variant="outline" className={getStatusColor(destination.status || 'Regular')}>
+                      {destination.status || 'Regular'}
                     </Badge>
                   </TableCell>
-                  <TableCell>{destination.createdAt}</TableCell>
+                  <TableCell>{new Date(destination.created_at || Date.now()).toLocaleDateString('id-ID')}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
-                      <Button variant="ghost" size="icon" title="Lihat">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        title="Lihat"
+                        onClick={() => handleViewDestination(destination.id)}
+                      >
                         <Eye className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" title="Edit">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        title="Edit"
+                        onClick={() => handleEditDestination(destination.id)}
+                      >
                         <Edit className="h-4 w-4" />
                       </Button>
                       <Button 
@@ -243,13 +274,27 @@ const DestinationsList = () => {
                   </TableCell>
                 </TableRow>
               ))}
-            {destinations.length === 0 && (
+            
+            {!loading && destinations.length === 0 && (
               <TableRow>
                 <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                   Tidak ada destinasi yang ditemukan
                 </TableCell>
               </TableRow>
             )}
+            
+            {!loading && destinations.length > 0 && 
+              destinations.filter(dest => 
+                (!searchTerm || dest.name.toLowerCase().includes(searchTerm.toLowerCase())) &&
+                (!selectedCategory || selectedCategory === "all" || dest.category === selectedCategory) &&
+                (!selectedStatus || selectedStatus === "all" || dest.status === selectedStatus)
+              ).length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    Tidak ada destinasi yang cocok dengan kriteria pencarian
+                  </TableCell>
+                </TableRow>
+              )}
           </TableBody>
         </Table>
       </div>
