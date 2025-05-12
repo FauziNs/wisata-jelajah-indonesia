@@ -63,13 +63,13 @@ serve(async (req) => {
       
     if (ticketError || !ticketData) {
       return new Response(
-        JSON.stringify({ error: "Unable to find ticket information" }),
+        JSON.stringify({ error: "Unable to find ticket information", details: ticketError?.message }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
     
     // Create Stripe instance with secret key
-    const stripe = new Stripe("sk_test_51RN2V1PBTExOqd1wRoyD0wOWkFygRMxgC9KukQArWWiYug364mzW4ohXQ2N49wiBKCqCBiTHDljJck2VLqUu34qR00lWjhXSVT", {
+    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2023-10-16",
     });
     
@@ -96,7 +96,8 @@ serve(async (req) => {
         visitor_phone: visitorPhone,
         special_requests: specialRequests,
         status: 'pending',
-        payment_status: 'unpaid'
+        payment_status: 'unpaid',
+        payment_method: 'stripe'
       })
       .select()
       .single();
@@ -138,7 +139,7 @@ serve(async (req) => {
     // Update the booking with the Stripe session ID
     await supabase
       .from('bookings')
-      .update({ payment_method: 'stripe', stripe_session_id: session.id })
+      .update({ stripe_session_id: session.id })
       .eq('id', bookingData.id);
     
     // Return the checkout session URL to redirect the user

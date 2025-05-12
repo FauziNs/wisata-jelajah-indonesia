@@ -19,6 +19,7 @@ export interface DestinationType {
   slug?: string;
   created_at?: string;
   updated_at?: string;
+  status?: string; // Added for admin functionality
 }
 
 export interface TicketType {

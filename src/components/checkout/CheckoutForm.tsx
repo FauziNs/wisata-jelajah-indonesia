@@ -59,53 +59,42 @@ const CheckoutForm = ({
     try {
       setIsLoading(true);
       
-      // Create a temporary booking in Supabase
-      const bookingNumber = `BK-${Date.now().toString().slice(-8)}`;
-      
-      const { data: booking, error: bookingError } = await supabase
-        .from('bookings')
-        .insert({
-          user_id: user?.id,
-          destination_id: destinationId,
-          ticket_type_id: ticketId,
-          visitor_name: visitorName,
-          visitor_email: visitorEmail,
-          visitor_phone: visitorPhone,
-          visit_date: visitDate,
-          quantity,
-          total_price: totalPrice,
-          special_requests: specialRequests,
-          booking_number: bookingNumber,
-          status: 'pending',
-          payment_status: 'unpaid'
-        })
-        .select()
-        .single();
-      
-      if (bookingError) {
-        throw bookingError;
-      }
+      console.log('Starting checkout process with:', {
+        ticketId,
+        destinationId,
+        quantity,
+        visitorName,
+        visitorEmail,
+        visitDate
+      });
       
       // Call Stripe checkout function
-      const { data: stripeSession, error: stripeError } = await supabase.functions.invoke('create-checkout', {
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: {
-          bookingId: booking.id,
-          amount: totalPrice,
-          destinationName,
-          ticketName,
+          ticketId,
+          destinationId,
           quantity,
-          visitDate,
           visitorName,
-          bookingNumber
+          visitorEmail,
+          visitorPhone,
+          visitDate,
+          specialRequests
         }
       });
 
-      if (stripeError) {
-        throw stripeError;
+      if (error) {
+        console.error('Stripe checkout error:', error);
+        throw error;
       }
 
+      if (!data || !data.url) {
+        throw new Error('No checkout URL returned from server');
+      }
+
+      console.log('Redirecting to Stripe checkout:', data.url);
+      
       // Redirect to Stripe checkout
-      window.location.href = stripeSession.url;
+      window.location.href = data.url;
       
     } catch (error) {
       console.error('Payment error:', error);

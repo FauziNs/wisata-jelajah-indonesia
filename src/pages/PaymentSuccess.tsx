@@ -24,6 +24,7 @@ const PaymentSuccess = () => {
         // Get booking ID from URL params
         const params = new URLSearchParams(location.search);
         const bookingId = params.get('booking_id');
+        const sessionId = params.get('session_id');
         
         if (!bookingId) {
           toast({
@@ -35,18 +36,21 @@ const PaymentSuccess = () => {
           return;
         }
         
+        console.log('Fetching booking details for ID:', bookingId);
+        
         // Get booking details from Supabase
         const { data, error } = await supabase
           .from('bookings')
           .select(`
             *,
-            destinations:destination_id(name, location, image_url),
-            ticket_types:ticket_type_id(name, price)
+            destinations:destination_id(*),
+            ticket_types:ticket_type_id(*)
           `)
           .eq('id', bookingId)
           .single();
         
         if (error || !data) {
+          console.error('Error fetching booking details:', error);
           toast({
             title: "Error",
             description: "Gagal memuat detail pemesanan",
@@ -56,14 +60,27 @@ const PaymentSuccess = () => {
           return;
         }
         
+        console.log('Booking details retrieved:', data);
+        
         // Update booking status to paid and confirmed if coming from successful Stripe payment
-        await supabase
-          .from('bookings')
-          .update({
-            payment_status: 'paid',
-            status: 'confirmed'
-          })
-          .eq('id', bookingId);
+        if (sessionId) {
+          console.log('Updating booking status with session ID:', sessionId);
+          
+          const { error: updateError } = await supabase
+            .from('bookings')
+            .update({
+              payment_status: 'paid',
+              status: 'confirmed',
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', bookingId);
+            
+          if (updateError) {
+            console.error('Error updating booking status:', updateError);
+          } else {
+            console.log('Booking status updated successfully');
+          }
+        }
         
         setBookingDetails(data);
       } catch (error) {
