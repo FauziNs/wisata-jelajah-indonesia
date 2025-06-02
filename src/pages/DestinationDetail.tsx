@@ -1,3 +1,4 @@
+
 import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
@@ -147,7 +148,7 @@ const DestinationDetail = () => {
         const { data: slugData, error: slugError } = await supabase
           .from('destinations')
           .select('*')
-          .eq('slug', identifier)
+          .eq('name', identifier)
           .maybeSingle();
           
         if (slugData && !slugError) {
@@ -163,21 +164,21 @@ const DestinationDetail = () => {
           name: data.name,
           location: data.location,
           description: data.description,
-          amenities: data.amenities || undefined,
-          address: data.address || undefined,
-          operational_hours: data.operational_hours || undefined,
-          best_time_to_visit: data.best_time_to_visit || undefined,
-          google_maps_url: data.google_maps_url || undefined,
-          image_url: data.image_url || undefined,
+          amenities: data.amenities || '',
+          address: data.address || '',
+          operational_hours: data.operational_hours || '',
+          best_time_to_visit: data.best_time_to_visit || '',
+          google_maps_url: data.google_maps_url || '',
+          image_url: data.image_url || '',
           price: data.price || 0,
-          category: data.category || undefined,
-          rating: data.rating || undefined,
-          long_description: data.long_description || undefined,
-          full_location: data.full_location || undefined,
-          reviews_count: data.reviews_count || undefined,
-          slug: data.slug || undefined,
-          created_at: data.created_at || undefined,
-          updated_at: data.updated_at || undefined
+          category: data.category || '',
+          rating: data.rating || 0,
+          long_description: data.long_description || '',
+          full_location: data.full_location || '',
+          reviews_count: data.reviews_count || 0,
+          slug: data.slug || '',
+          created_at: data.created_at || '',
+          updated_at: data.updated_at || ''
         };
         
         setDestination(typedDestination);
@@ -195,29 +196,26 @@ const DestinationDetail = () => {
             id: ticket.id,
             name: ticket.name,
             price: typeof ticket.price === 'number' ? ticket.price : 0,
-            description: ticket.description || undefined,
-            capacity: ticket.capacity || undefined,
-            validity_duration: ticket.validity_duration || undefined,
+            description: ticket.description || '',
+            capacity: ticket.capacity || 'Tidak terbatas',
+            validity_duration: ticket.validity_duration || '1 hari',
             destination_id: ticket.destination_id || data.id,
-            created_at: ticket.created_at || undefined,
-            updated_at: ticket.updated_at || undefined
+            created_at: ticket.created_at || '',
+            updated_at: ticket.updated_at || ''
           }));
           
           setTicketTypes(typedTickets);
           setSelectedTicket(typedTickets[0]); // Select first ticket by default
         } else {
           // If no tickets found, create a default one based on destination price
-          // Generate a proper UUID for the default ticket
-          const defaultTicketId = crypto.randomUUID();
-          
           const defaultTicket: TicketType = {
-            id: defaultTicketId, // Use a valid UUID instead of "default"
+            id: crypto.randomUUID(),
             name: 'Tiket Masuk',
             price: typeof typedDestination.price === 'number' ? typedDestination.price : 50000,
             description: 'Tiket masuk untuk mengunjungi destinasi',
             destination_id: data.id,
             capacity: 'Tidak terbatas',
-            validity_duration: '1'
+            validity_duration: '1 hari'
           };
           
           setTicketTypes([defaultTicket]);
@@ -238,8 +236,6 @@ const DestinationDetail = () => {
       } else {
         console.log("Destination not found, using dummy data");
         // If no destination found, use dummy data with a valid UUID
-        const dummyTicketId = crypto.randomUUID();
-        
         const dummyData: DestinationType = {
           id: identifier,
           name: 'Pantai Kuta',
@@ -259,22 +255,22 @@ const DestinationDetail = () => {
         // Set dummy ticket types with valid UUIDs
         const dummyTickets: TicketType[] = [
           {
-            id: `${crypto.randomUUID()}`,
+            id: crypto.randomUUID(),
             name: 'Tiket Dewasa',
             price: 50000,
             description: 'Untuk pengunjung berusia 12 tahun ke atas',
             capacity: 'Tidak terbatas',
             validity_duration: '1 hari',
-            destination_id: id || '1'
+            destination_id: identifier
           },
           {
-            id: `${crypto.randomUUID()}`,
+            id: crypto.randomUUID(),
             name: 'Tiket Anak-anak',
             price: 25000,
             description: 'Untuk pengunjung berusia 5-11 tahun',
             capacity: 'Tidak terbatas',
             validity_duration: '1 hari',
-            destination_id: id || '1'
+            destination_id: identifier
           }
         ];
         
@@ -411,70 +407,50 @@ const DestinationDetail = () => {
         throw new Error("Data destinasi tidak valid");
       }
       
-      // Create booking number
-      const bookingNumber = `BK-${Date.now().toString().slice(-8)}`;
-      
-      // Create booking record in database
-      const { data: booking, error: bookingError } = await supabase
-        .from('bookings')
-        .insert({
-          booking_number: bookingNumber,
-          user_id: user?.id,
-          destination_id: destination.id,
-          ticket_type_id: selectedTicket.id,
-          visitor_name: visitorName,
-          visitor_email: visitorEmail,
-          visitor_phone: visitorPhone,
-          visit_date: visitDate,
-          quantity: quantity,
-          total_price: selectedTicket.price * quantity,
-          special_requests: specialRequests,
-          status: 'pending',
-          payment_status: 'unpaid'
-        })
-        .select()
-        .single();
-        
-      if (bookingError) {
-        throw bookingError;
-      }
-      
-      console.log("Booking created:", booking);
+      console.log('Starting checkout process with:', {
+        ticketId: selectedTicket.id,
+        destinationId: destination.id,
+        quantity,
+        visitorName,
+        visitorEmail,
+        visitorPhone,
+        visitDate,
+        specialRequests
+      });
       
       // Call Stripe checkout function
-      const { data: sessionData, error: sessionError } = await supabase.functions.invoke('create-checkout', {
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: {
+          ticketId: selectedTicket.id,
           destinationId: destination.id,
-          ticketTypeId: selectedTicket.id,
-          quantity: quantity,
-          visitDate: visitDate,
-          visitorInfo: {
-            name: visitorName,
-            email: visitorEmail,
-            phone: visitorPhone,
-            specialRequests: specialRequests
-          }
+          quantity,
+          visitorName,
+          visitorEmail,
+          visitorPhone,
+          visitDate,
+          specialRequests
         }
       });
 
-      if (sessionError) {
-        console.error("Session error:", sessionError);
-        throw new Error(sessionError.message || "Unknown error occurred");
+      if (error) {
+        console.error('Stripe checkout error:', error);
+        throw error;
       }
 
-      console.log("Stripe session created:", sessionData);
-      
-      if (sessionData && sessionData.sessionUrl) {
-        // Redirect to Stripe checkout
-        window.location.href = sessionData.sessionUrl;
-      } else {
-        throw new Error("Tidak dapat membuat sesi pembayaran");
+      if (!data || !data.url) {
+        throw new Error('No checkout URL returned from server');
       }
+
+      console.log('Redirecting to Stripe checkout:', data.url);
+      
+      // Redirect to Stripe checkout in the same window
+      window.location.href = data.url;
+      
     } catch (error) {
-      console.error("Error creating checkout session:", error);
+      console.error('Payment error:', error);
       toast({
-        title: "Error",
-        description: `Gagal membuat sesi pembayaran: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        title: "Gagal Memproses Pembayaran",
+        description: "Terjadi kesalahan saat memproses pembayaran. Silakan coba lagi.",
         variant: "destructive"
       });
     } finally {
