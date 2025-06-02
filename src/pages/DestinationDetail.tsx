@@ -163,11 +163,11 @@ const DestinationDetail = () => {
           name: data.name,
           location: data.location,
           description: data.description,
-          amenities: data.amenities || 'Fasilitas lengkap tersedia',
-          address: data.address || data.full_location || data.location,
+          amenities: 'Fasilitas lengkap tersedia', // Default value since this field doesn't exist in DB
+          address: data.full_location || data.location, // Use full_location as address fallback
           operational_hours: data.operational_hours || '08:00 - 18:00',
-          best_time_to_visit: data.best_time_to_visit || 'Sepanjang tahun',
-          google_maps_url: data.google_maps_url || '',
+          best_time_to_visit: 'Sepanjang tahun', // Default value since this field doesn't exist in DB
+          google_maps_url: '', // Default value since this field doesn't exist in DB
           image_url: data.image_url || '',
           price: data.price || 0,
           category: data.category || '',
@@ -175,7 +175,7 @@ const DestinationDetail = () => {
           long_description: data.long_description || data.description,
           full_location: data.full_location || data.location,
           reviews_count: data.reviews_count || 0,
-          slug: data.slug || data.name.toLowerCase().replace(/\s+/g, '-'),
+          slug: data.name.toLowerCase().replace(/\s+/g, '-'), // Generate slug from name
           created_at: data.created_at || '',
           updated_at: data.updated_at || ''
         };
@@ -196,8 +196,8 @@ const DestinationDetail = () => {
             name: ticket.name,
             price: typeof ticket.price === 'number' ? ticket.price : 0,
             description: ticket.description || '',
-            capacity: ticket.capacity || 'Tidak terbatas',
-            validity_duration: ticket.validity_duration || '1',
+            capacity: 'Tidak terbatas', // Default value since this field doesn't exist in DB
+            validity_duration: '1', // Default value since this field doesn't exist in DB
             destination_id: ticket.destination_id || data.id,
             created_at: ticket.created_at || '',
             updated_at: ticket.updated_at || ''
