@@ -23,6 +23,7 @@ const SaveButton = ({
 }: SaveButtonProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
 
   const toggleSaveDestination = async () => {
     if (!isAuthenticated) {
@@ -30,47 +31,39 @@ const SaveButton = ({
       return;
     }
 
+    if (!userId) {
+      toast({
+        title: "Error",
+        description: "User ID tidak ditemukan",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setIsLoading(true);
+    
     try {
-      if (!userId) {
-        toast({
-          title: "Error",
-          description: "User ID tidak ditemukan",
-          variant: "destructive"
-        });
-        return;
-      }
-      
       // Ensure destinationId is always a string
       const destId = typeof destinationId === 'number' ? destinationId.toString() : destinationId;
 
       if (isSaved) {
-        // Find the saved record to delete
-        const { data: savedData, error: findError } = await supabase
+        // Remove from saved destinations
+        const { error: deleteError } = await supabase
           .from('saved_destinations')
-          .select('id')
+          .delete()
           .eq('user_id', userId)
           .eq('destination_id', destId);
 
-        if (findError) throw findError;
+        if (deleteError) throw deleteError;
         
-        if (savedData && savedData.length > 0) {
-          // Delete using the found ID
-          const { error: deleteError } = await supabase
-            .from('saved_destinations')
-            .delete()
-            .eq('id', savedData[0].id);
-
-          if (deleteError) throw deleteError;
-          
-          setIsSaved(false);
-          toast({
-            title: "Berhasil",
-            description: "Destinasi dihapus dari daftar tersimpan",
-            variant: "default"
-          });
-        }
+        setIsSaved(false);
+        toast({
+          title: "Berhasil",
+          description: "Destinasi dihapus dari daftar tersimpan",
+          variant: "default"
+        });
       } else {
-        // Insert new saved destination with string values
+        // Add to saved destinations
         const { error: insertError } = await supabase
           .from('saved_destinations')
           .insert({
@@ -78,14 +71,27 @@ const SaveButton = ({
             destination_id: destId
           });
 
-        if (insertError) throw insertError;
-        
-        setIsSaved(true);
-        toast({
-          title: "Berhasil",
-          description: "Destinasi ditambahkan ke daftar tersimpan",
-          variant: "default"
-        });
+        if (insertError) {
+          // Check if it's a duplicate error
+          if (insertError.code === '23505') {
+            // Already saved, just update the state
+            setIsSaved(true);
+            toast({
+              title: "Sudah Tersimpan",
+              description: "Destinasi sudah ada dalam daftar tersimpan",
+              variant: "default"
+            });
+          } else {
+            throw insertError;
+          }
+        } else {
+          setIsSaved(true);
+          toast({
+            title: "Berhasil",
+            description: "Destinasi ditambahkan ke daftar tersimpan",
+            variant: "default"
+          });
+        }
       }
     } catch (error) {
       console.error("Error toggling saved status:", error);
@@ -94,6 +100,8 @@ const SaveButton = ({
         description: "Gagal mengubah status simpan",
         variant: "destructive"
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -102,16 +110,17 @@ const SaveButton = ({
       variant="secondary"
       className="absolute top-2 right-2"
       onClick={toggleSaveDestination}
+      disabled={isLoading}
     >
       {isSaved ? (
         <>
           <Heart className="mr-2 h-4 w-4 fill-red-500 text-red-500" />
-          Disimpan
+          {isLoading ? 'Menghapus...' : 'Disimpan'}
         </>
       ) : (
         <>
           <Heart className="mr-2 h-4 w-4" />
-          Simpan
+          {isLoading ? 'Menyimpan...' : 'Simpan'}
         </>
       )}
     </Button>

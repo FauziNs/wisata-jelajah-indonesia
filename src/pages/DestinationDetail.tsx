@@ -1,4 +1,3 @@
-
 import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
@@ -158,25 +157,25 @@ const DestinationDetail = () => {
 
       if (data) {
         console.log("Found destination:", data);
-        // Create a properly typed destination object
+        // Create a properly typed destination object with default values for missing fields
         const typedDestination: DestinationType = {
           id: data.id,
           name: data.name,
           location: data.location,
           description: data.description,
-          amenities: data.amenities || '',
-          address: data.address || '',
-          operational_hours: data.operational_hours || '',
-          best_time_to_visit: data.best_time_to_visit || '',
+          amenities: data.amenities || 'Fasilitas lengkap tersedia',
+          address: data.address || data.full_location || data.location,
+          operational_hours: data.operational_hours || '08:00 - 18:00',
+          best_time_to_visit: data.best_time_to_visit || 'Sepanjang tahun',
           google_maps_url: data.google_maps_url || '',
           image_url: data.image_url || '',
           price: data.price || 0,
           category: data.category || '',
           rating: data.rating || 0,
-          long_description: data.long_description || '',
-          full_location: data.full_location || '',
+          long_description: data.long_description || data.description,
+          full_location: data.full_location || data.location,
           reviews_count: data.reviews_count || 0,
-          slug: data.slug || '',
+          slug: data.slug || data.name.toLowerCase().replace(/\s+/g, '-'),
           created_at: data.created_at || '',
           updated_at: data.updated_at || ''
         };
@@ -191,7 +190,7 @@ const DestinationDetail = () => {
 
         if (!ticketError && ticketData && ticketData.length > 0) {
           console.log("Found tickets:", ticketData);
-          // Create properly typed ticket objects
+          // Create properly typed ticket objects with default values
           const typedTickets: TicketType[] = ticketData.map(ticket => ({
             id: ticket.id,
             name: ticket.name,
@@ -247,7 +246,13 @@ const DestinationDetail = () => {
           rating: 4.7,
           operational_hours: '08:00 - 18:00 (Setiap Hari)',
           amenities: 'Toilet, Tempat Parkir, Food Court, Penyewaan Papan Selancar',
-          address: 'Jalan Pantai Kuta, Kuta, Badung, Bali'
+          address: 'Jalan Pantai Kuta, Kuta, Badung, Bali',
+          best_time_to_visit: 'Sepanjang tahun',
+          google_maps_url: '',
+          long_description: 'Pantai Kuta adalah salah satu pantai terkenal di Bali dengan ombak yang cocok untuk berselancar, pemandangan sunset yang menakjubkan, dan berbagai aktivitas menarik.',
+          full_location: 'Jalan Pantai Kuta, Kuta, Badung, Bali',
+          reviews_count: 150,
+          slug: 'pantai-kuta'
         };
         
         setDestination(dummyData);
