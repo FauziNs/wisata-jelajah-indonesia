@@ -197,7 +197,7 @@ const DestinationDetail = () => {
             price: typeof ticket.price === 'number' ? ticket.price : 0,
             description: ticket.description || '',
             capacity: ticket.capacity || 'Tidak terbatas',
-            validity_duration: ticket.validity_duration || '1 hari',
+            validity_duration: ticket.validity_duration || '1',
             destination_id: ticket.destination_id || data.id,
             created_at: ticket.created_at || '',
             updated_at: ticket.updated_at || ''
@@ -214,7 +214,7 @@ const DestinationDetail = () => {
             description: 'Tiket masuk untuk mengunjungi destinasi',
             destination_id: data.id,
             capacity: 'Tidak terbatas',
-            validity_duration: '1 hari'
+            validity_duration: '1'
           };
           
           setTicketTypes([defaultTicket]);
@@ -265,7 +265,7 @@ const DestinationDetail = () => {
             price: 50000,
             description: 'Untuk pengunjung berusia 12 tahun ke atas',
             capacity: 'Tidak terbatas',
-            validity_duration: '1 hari',
+            validity_duration: '1',
             destination_id: identifier
           },
           {
@@ -274,7 +274,7 @@ const DestinationDetail = () => {
             price: 25000,
             description: 'Untuk pengunjung berusia 5-11 tahun',
             capacity: 'Tidak terbatas',
-            validity_duration: '1 hari',
+            validity_duration: '1',
             destination_id: identifier
           }
         ];
