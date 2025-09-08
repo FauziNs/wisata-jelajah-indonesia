@@ -174,6 +174,13 @@ const Navbar = () => {
                   className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10"
                 >
                   <Link 
+                    to="/dashboard" 
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    onClick={() => setShowAccountMenu(false)}
+                  >
+                    Dashboard
+                  </Link>
+                  <Link 
                     to="/profile" 
                     className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     onClick={() => setShowAccountMenu(false)}
@@ -188,7 +195,7 @@ const Navbar = () => {
                     Pesanan Saya
                   </Link>
                   <Link 
-                    to="/saved" 
+                    to="/saved-destinations" 
                     className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     onClick={() => setShowAccountMenu(false)}
                   >
@@ -263,13 +270,16 @@ const Navbar = () => {
             <div className="pt-3 border-t border-gray-200">
               {isAuthenticated ? (
                 <>
+                  <Link to="/dashboard" className="block py-2 font-medium text-gray-700 hover:text-primary" onClick={toggleMenu}>
+                    Dashboard
+                  </Link>
                   <Link to="/profile" className="block py-2 font-medium text-gray-700 hover:text-primary" onClick={toggleMenu}>
                     Profil Saya
                   </Link>
                   <Link to="/bookings" className="block py-2 font-medium text-gray-700 hover:text-primary" onClick={toggleMenu}>
                     Pesanan Saya
                   </Link>
-                  <Link to="/saved" className="block py-2 font-medium text-gray-700 hover:text-primary" onClick={toggleMenu}>
+                  <Link to="/saved-destinations" className="block py-2 font-medium text-gray-700 hover:text-primary" onClick={toggleMenu}>
                     Destinasi Tersimpan
                   </Link>
                   {isAdmin && (

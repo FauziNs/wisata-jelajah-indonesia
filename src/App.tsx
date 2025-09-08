@@ -8,6 +8,7 @@ import Home from './pages/Index';
 import Register from './pages/auth/Register';
 import AdminRegister from './pages/auth/AdminRegister';
 import Login from './pages/auth/Login';
+import CustomerDashboard from './pages/CustomerDashboard';
 import Destinations from './pages/Destinations';
 import DestinationDetail from './pages/DestinationDetail';
 import PaymentSuccess from './pages/PaymentSuccess';
@@ -33,6 +34,7 @@ function App() {
           <Route path="register" element={<Register />} />
           <Route path="admin/register" element={<AdminRegister />} />
           <Route path="login" element={<Login />} />
+          <Route path="dashboard" element={<CustomerDashboard />} />
           <Route path="destinasi" element={<Destinations />} />
           <Route path="destinasi/:id" element={<DestinationDetail />} />
           <Route path="payment-success" element={<PaymentSuccess />} />

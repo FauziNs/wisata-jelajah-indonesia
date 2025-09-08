@@ -1,8 +1,31 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 const SocialLogin = () => {
+  const [loading, setLoading] = useState(false);
+
+  const handleGoogleLogin = async () => {
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/`
+        }
+      });
+
+      if (error) throw error;
+    } catch (error: any) {
+      console.error('Google login error:', error);
+      toast.error('Login dengan Google gagal');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="mt-6">
       <div className="relative">
@@ -14,8 +37,14 @@ const SocialLogin = () => {
         </div>
       </div>
       
-      <div className="grid grid-cols-2 gap-3 mt-6">
-        <Button variant="outline" type="button" className="w-full">
+      <div className="grid grid-cols-1 gap-3 mt-6">
+        <Button 
+          variant="outline" 
+          type="button" 
+          className="w-full"
+          onClick={handleGoogleLogin}
+          disabled={loading}
+        >
           <svg className="h-5 w-5 mr-2" viewBox="0 0 24 24">
             <g transform="matrix(1, 0, 0, 1, 27.009001, -39.238998)">
               <path fill="#4285F4" d="M -3.264 51.509 C -3.264 50.719 -3.334 49.969 -3.454 49.239 L -14.754 49.239 L -14.754 53.749 L -8.284 53.749 C -8.574 55.229 -9.424 56.479 -10.684 57.329 L -10.684 60.329 L -6.824 60.329 C -4.564 58.239 -3.264 55.159 -3.264 51.509 Z"/>
@@ -24,13 +53,7 @@ const SocialLogin = () => {
               <path fill="#EA4335" d="M -14.754 43.989 C -12.984 43.989 -11.404 44.599 -10.154 45.789 L -6.734 42.369 C -8.804 40.429 -11.514 39.239 -14.754 39.239 C -19.444 39.239 -23.494 41.939 -25.464 45.859 L -21.484 48.949 C -20.534 46.099 -17.884 43.989 -14.754 43.989 Z"/>
             </g>
           </svg>
-          Google
-        </Button>
-        <Button variant="outline" type="button" className="w-full">
-          <svg className="h-5 w-5 mr-2 text-[#1877F2]" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M9.19795 21.5H13.198V13.4901H16.8021L17.198 9.50977H13.198V7.5C13.198 6.94772 13.6457 6.5 14.198 6.5H17.198V2.5H14.198C11.4365 2.5 9.19795 4.73858 9.19795 7.5V9.50977H7.19795L6.80206 13.4901H9.19795V21.5Z" />
-          </svg>
-          Facebook
+          {loading ? 'Memproses...' : 'Masuk dengan Google'}
         </Button>
       </div>
     </div>

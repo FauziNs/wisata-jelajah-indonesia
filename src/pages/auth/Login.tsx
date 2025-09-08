@@ -43,10 +43,10 @@ const Login = () => {
       if (data.role === 'admin') {
         navigate('/admin');
       } else {
-        navigate(redirectTo);
+        navigate('/dashboard');
       }
     } else {
-      navigate(redirectTo);
+      navigate('/dashboard');
     }
   };
 
