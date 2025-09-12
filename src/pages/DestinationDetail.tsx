@@ -206,19 +206,10 @@ const DestinationDetail = () => {
           setTicketTypes(typedTickets);
           setSelectedTicket(typedTickets[0]); // Select first ticket by default
         } else {
-          // If no tickets found, create a default one based on destination price
-          const defaultTicket: TicketType = {
-            id: crypto.randomUUID(),
-            name: 'Tiket Masuk',
-            price: typeof typedDestination.price === 'number' ? typedDestination.price : 50000,
-            description: 'Tiket masuk untuk mengunjungi destinasi',
-            destination_id: data.id,
-            capacity: 'Tidak terbatas',
-            validity_duration: '1'
-          };
-          
-          setTicketTypes([defaultTicket]);
-          setSelectedTicket(defaultTicket);
+          // If no tickets found, display message to user that tickets are not available
+          console.log("No tickets found for destination");
+          setTicketTypes([]);
+          setSelectedTicket(null);
         }
 
         // Check if destination is saved
@@ -257,30 +248,9 @@ const DestinationDetail = () => {
         
         setDestination(dummyData);
         
-        // Set dummy ticket types with valid UUIDs
-        const dummyTickets: TicketType[] = [
-          {
-            id: crypto.randomUUID(),
-            name: 'Tiket Dewasa',
-            price: 50000,
-            description: 'Untuk pengunjung berusia 12 tahun ke atas',
-            capacity: 'Tidak terbatas',
-            validity_duration: '1',
-            destination_id: identifier
-          },
-          {
-            id: crypto.randomUUID(),
-            name: 'Tiket Anak-anak',
-            price: 25000,
-            description: 'Untuk pengunjung berusia 5-11 tahun',
-            capacity: 'Tidak terbatas',
-            validity_duration: '1',
-            destination_id: identifier
-          }
-        ];
-        
-        setTicketTypes(dummyTickets);
-        setSelectedTicket(dummyTickets[0]);
+        // For dummy data, don't create fake tickets - let the edge function handle it
+        setTicketTypes([]);
+        setSelectedTicket(null);
       }
     } catch (error) {
       console.error("Error fetching destination details:", error);
@@ -420,7 +390,8 @@ const DestinationDetail = () => {
         visitorEmail,
         visitorPhone,
         visitDate,
-        specialRequests
+        specialRequests,
+        selectedTicketPrice: selectedTicket.price
       });
       
       // Call Stripe checkout function
@@ -541,11 +512,17 @@ const DestinationDetail = () => {
                         <SelectContent>
                           <SelectGroup>
                             <SelectLabel>Jenis Tiket</SelectLabel>
-                            {ticketTypes.map((ticket) => (
-                              <SelectItem key={ticket.id} value={ticket.id}>
-                                {ticket.name} - Rp {ticket.price.toLocaleString('id-ID')}
+                            {ticketTypes.length > 0 ? (
+                              ticketTypes.map((ticket) => (
+                                <SelectItem key={ticket.id} value={ticket.id}>
+                                  {ticket.name} - Rp {ticket.price.toLocaleString('id-ID')}
+                                </SelectItem>
+                              ))
+                            ) : (
+                              <SelectItem value="no-tickets" disabled>
+                                Tiket belum tersedia
                               </SelectItem>
-                            ))}
+                            )}
                           </SelectGroup>
                         </SelectContent>
                       </Select>
@@ -665,7 +642,7 @@ const DestinationDetail = () => {
                   <Button 
                     className="w-full flex items-center gap-2" 
                     onClick={handleBookTicket}
-                    disabled={!selectedTicket || isSubmitting}
+                    disabled={!selectedTicket || isSubmitting || ticketTypes.length === 0}
                   >
                     {isSubmitting ? (
                       <>
