@@ -1,71 +1,30 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Calendar, Clock, ArrowRight } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Calendar, Clock, ArrowRight, Percent, Gift } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
-const promotions = [
-  {
-    id: 1,
-    title: 'Diskon 25% untuk Destinasi Pantai',
-    slug: 'diskon-25-untuk-destinasi-pantai',
-    image: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-    category: 'Seasonal',
-    expiryDate: '2025-06-30',
-    discount: '25%',
-    promoCode: 'BEACH25',
-    description: 'Dapatkan diskon 25% untuk tiket masuk destinasi pantai pilihan di seluruh Indonesia.'
-  },
-  {
-    id: 2,
-    title: 'Paket Keluarga: Beli 3 Dapat 1 Gratis',
-    slug: 'paket-keluarga-beli-3-dapat-1-gratis',
-    image: 'https://images.unsplash.com/photo-1581417478175-a9ef18f210c2?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-    category: 'Family',
-    expiryDate: '2025-05-31',
-    discount: 'Beli 3 Dapat 1',
-    promoCode: 'FAMILY4',
-    description: 'Beli 3 tiket dewasa dan dapatkan 1 tiket anak gratis untuk destinasi pilihan.'
-  },
-  {
-    id: 3,
-    title: 'Flash Sale: Diskon 50% untuk 100 Pembeli Pertama',
-    slug: 'flash-sale-diskon-50-untuk-100-pembeli-pertama',
-    image: 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-    category: 'Flash Sale',
-    expiryDate: '2025-04-15',
-    discount: '50%',
-    promoCode: 'FLASH50',
-    description: 'Diskon 50% untuk 100 pembeli pertama di destinasi wisata Taman Nasional.'
-  },
-  {
-    id: 4,
-    title: 'Paket Hemat Long Weekend',
-    slug: 'paket-hemat-long-weekend',
-    image: 'https://images.unsplash.com/photo-1519677100203-a0e668c92439?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-    category: 'Weekend',
-    expiryDate: '2025-07-31',
-    discount: '30%',
-    promoCode: 'WEEKEND30',
-    description: 'Hemat 30% untuk kunjungan di akhir pekan panjang. Berlaku di semua destinasi pilihan.'
-  },
-  {
-    id: 5,
-    title: 'Promo Spesial Ulang Tahun',
-    slug: 'promo-spesial-ulang-tahun',
-    image: 'https://images.unsplash.com/photo-1513151233558-d860c5398176?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-    category: 'Special',
-    expiryDate: '2025-12-31',
-    discount: 'Gratis',
-    promoCode: 'BIRTHDAY',
-    description: 'Gratis tiket masuk pada hari ulang tahun Anda dengan menunjukkan KTP.'
-  }
-];
+interface Promotion {
+  id: string;
+  title: string;
+  description: string;
+  promo_code: string;
+  discount_percentage: number | null;
+  discount_amount: number | null;
+  start_date: string;
+  end_date: string;
+  is_active: boolean;
+  category: string;
+  image_url: string;
+}
 
 const calculateDaysLeft = (expiryDate: string) => {
   const today = new Date();
@@ -75,283 +34,260 @@ const calculateDaysLeft = (expiryDate: string) => {
   return diffDays;
 };
 
+const formatDiscount = (promotion: Promotion) => {
+  if (promotion.discount_percentage === 100) return 'GRATIS';
+  if (promotion.discount_percentage) return `${promotion.discount_percentage}%`;
+  if (promotion.discount_amount) return `Rp ${promotion.discount_amount.toLocaleString('id-ID')}`;
+  return 'Diskon Spesial';
+};
+
 const Promotions = () => {
+  const [promotions, setPromotions] = useState<Promotion[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [featuredPromo, setFeaturedPromo] = useState<Promotion | null>(null);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    fetchPromotions();
+  }, []);
+
+  const fetchPromotions = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('promotions')
+        .select('*')
+        .eq('is_active', true)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      setPromotions(data || []);
+      // Set featured promo to the first one with category 'Featured'
+      const featured = data?.find(p => p.category === 'Featured') || data?.[0];
+      setFeaturedPromo(featured || null);
+    } catch (error) {
+      console.error('Error fetching promotions:', error);
+      toast({
+        title: "Error",
+        description: "Gagal memuat promo. Silakan coba lagi.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const copyPromoCode = async (code: string) => {
+    try {
+      await navigator.clipboard.writeText(code);
+      toast({
+        title: "Berhasil!",
+        description: `Kode promo ${code} berhasil disalin`,
+      });
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: "Gagal menyalin kode promo",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const filterPromotionsByCategory = (category: string) => {
+    if (category === 'all') return promotions;
+    return promotions.filter(p => p.category.toLowerCase() === category.toLowerCase());
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <div className="bg-gradient-to-br from-primary via-primary/90 to-secondary text-white py-12">
+          <div className="container-custom">
+            <Skeleton className="h-8 w-96 mb-4 bg-white/20" />
+            <Skeleton className="h-6 w-[500px] bg-white/20" />
+          </div>
+        </div>
+        <div className="container-custom py-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, i) => (
+              <Card key={i} className="overflow-hidden">
+                <Skeleton className="h-48 w-full" />
+                <CardContent className="p-5">
+                  <Skeleton className="h-6 w-full mb-2" />
+                  <Skeleton className="h-4 w-full mb-4" />
+                  <Skeleton className="h-4 w-24" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
       
-      <div className="bg-gradient-to-r from-primary to-blue-700 text-white py-12">
-        <div className="container-custom">
-          <h1 className="text-3xl md:text-4xl font-bold mb-4">Promo & Penawaran Spesial</h1>
-          <p className="text-lg text-blue-100 mb-8">
-            Dapatkan penawaran terbaik untuk pengalaman wisata yang tak terlupakan
+      <div className="bg-gradient-to-br from-primary via-primary/90 to-secondary text-white py-16 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-black/20 to-transparent"></div>
+        <div className="container-custom relative z-10">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="bg-accent/20 p-3 rounded-full">
+              <Gift className="h-8 w-8 text-accent" />
+            </div>
+            <div>
+              <Badge className="bg-accent text-white mb-2">Penawaran Terbatas</Badge>
+              <h1 className="text-3xl md:text-5xl font-bold">
+                Promo & Penawaran <span className="text-accent">Spesial</span>
+              </h1>
+            </div>
+          </div>
+          <p className="text-lg text-white/90 max-w-2xl">
+            Dapatkan penawaran terbaik untuk pengalaman wisata yang tak terlupakan dengan promo eksklusif kami
           </p>
         </div>
       </div>
       
       <div className="container-custom py-8">
         {/* Featured Promo */}
-        <div className="mb-12">
-          <div className="relative rounded-xl overflow-hidden">
-            <img 
-              src="https://images.unsplash.com/photo-1576085898323-218337e3e43c?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80" 
-              alt="Featured Promotion" 
-              className="w-full h-[400px] object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-black/30 flex items-center">
-              <div className="p-8 md:p-12 max-w-2xl">
-                <Badge className="bg-accent text-white mb-4">Limited Time</Badge>
-                <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-                  Diskon 40% untuk 10 Destinasi Terbaik
-                </h2>
-                <p className="text-white/90 mb-6">
-                  Nikmati liburan dengan harga spesial! Booking sekarang untuk perjalanan hingga akhir tahun.
-                  Gunakan kode promo TOP40 untuk mendapatkan diskon.
-                </p>
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <Button className="bg-accent hover:bg-accent/90">
-                    Lihat Detail
-                  </Button>
-                  <Button variant="outline" className="text-white border-white hover:bg-white/10">
-                    Lihat Semua Promo
-                  </Button>
+        {featuredPromo && (
+          <div className="mb-12">
+            <div className="relative rounded-2xl overflow-hidden shadow-2xl">
+              <img 
+                src={featuredPromo.image_url} 
+                alt={featuredPromo.title} 
+                className="w-full h-[400px] md:h-[500px] object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent flex items-center">
+                <div className="p-8 md:p-12 max-w-3xl">
+                  <div className="flex items-center gap-3 mb-4">
+                    <Badge className="bg-accent text-white font-semibold">
+                      <Clock className="h-4 w-4 mr-1" />
+                      Limited Time
+                    </Badge>
+                    <Badge className="bg-secondary text-white font-semibold">
+                      <Percent className="h-4 w-4 mr-1" />
+                      {formatDiscount(featuredPromo)}
+                    </Badge>
+                  </div>
+                  <h2 className="text-3xl md:text-5xl font-bold text-white mb-4 leading-tight">
+                    {featuredPromo.title}
+                  </h2>
+                  <p className="text-white/90 text-lg mb-6 leading-relaxed">
+                    {featuredPromo.description}
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <Button 
+                      className="bg-accent hover:bg-accent/90 text-white font-semibold px-8 py-3"
+                      onClick={() => copyPromoCode(featuredPromo.promo_code)}
+                    >
+                      Gunakan Kode: {featuredPromo.promo_code}
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      className="text-white border-white hover:bg-white/10 font-semibold px-8 py-3"
+                    >
+                      Lihat Semua Promo
+                      <ArrowRight className="h-4 w-4 ml-2" />
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
         
         {/* Promotion Categories */}
+        <div className="mb-8">
+          <h2 className="text-2xl md:text-3xl font-bold mb-2">Semua Penawaran</h2>
+          <p className="text-muted-foreground mb-6">Pilih kategori promo yang sesuai dengan kebutuhan Anda</p>
+        </div>
+        
         <Tabs defaultValue="all" className="w-full">
-          <TabsList className="mb-8">
-            <TabsTrigger value="all">Semua Promo</TabsTrigger>
-            <TabsTrigger value="seasonal">Seasonal</TabsTrigger>
-            <TabsTrigger value="weekend">Weekend</TabsTrigger>
-            <TabsTrigger value="family">Keluarga</TabsTrigger>
-            <TabsTrigger value="flash">Flash Sale</TabsTrigger>
+          <TabsList className="mb-8 bg-muted/50 p-1 rounded-xl">
+            <TabsTrigger value="all" className="rounded-lg font-medium">Semua Promo</TabsTrigger>
+            <TabsTrigger value="seasonal" className="rounded-lg font-medium">Seasonal</TabsTrigger>
+            <TabsTrigger value="weekend" className="rounded-lg font-medium">Weekend</TabsTrigger>
+            <TabsTrigger value="family" className="rounded-lg font-medium">Keluarga</TabsTrigger>
+            <TabsTrigger value="flash sale" className="rounded-lg font-medium">Flash Sale</TabsTrigger>
+            <TabsTrigger value="special" className="rounded-lg font-medium">Special</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="all" className="space-y-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {promotions.map((promo) => (
-                <Link to={`/promo/${promo.slug}`} key={promo.id}>
-                  <Card className="overflow-hidden h-full hover:shadow-lg transition-shadow">
-                    <div className="relative h-48">
+          {['all', 'seasonal', 'weekend', 'family', 'flash sale', 'special'].map((category) => (
+            <TabsContent key={category} value={category} className="space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filterPromotionsByCategory(category).map((promo) => (
+                  <Card 
+                    key={promo.id} 
+                    className="group overflow-hidden h-full hover:shadow-xl transition-all duration-300 border-0 shadow-lg hover:scale-[1.02]"
+                  >
+                    <div className="relative h-48 overflow-hidden">
                       <img 
-                        src={promo.image} 
+                        src={promo.image_url} 
                         alt={promo.title} 
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                       />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                       <div className="absolute top-3 left-3">
-                        <Badge variant="secondary" className="font-medium">
+                        <Badge variant="secondary" className="font-medium bg-white/90 text-gray-800">
                           {promo.category}
                         </Badge>
                       </div>
                       <div className="absolute top-3 right-3">
-                        <Badge className="bg-accent text-white font-medium">
-                          {promo.discount}
+                        <Badge className="bg-accent text-white font-medium shadow-lg">
+                          {formatDiscount(promo)}
                         </Badge>
+                      </div>
+                      <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <Button 
+                          size="sm" 
+                          className="bg-accent hover:bg-accent/90 text-white"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            copyPromoCode(promo.promo_code);
+                          }}
+                        >
+                          Copy Code
+                        </Button>
                       </div>
                     </div>
                     <CardContent className="p-5">
-                      <h3 className="font-semibold text-lg mb-2 line-clamp-2">
+                      <h3 className="font-semibold text-lg mb-2 line-clamp-2 group-hover:text-primary transition-colors">
                         {promo.title}
                       </h3>
-                      <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+                      <p className="text-muted-foreground text-sm mb-4 line-clamp-2">
                         {promo.description}
                       </p>
                       <div className="flex items-center justify-between text-sm">
-                        <div className="flex items-center text-gray-500">
+                        <div className="flex items-center text-muted-foreground">
                           <Calendar className="h-4 w-4 mr-1" />
-                          <span>Berakhir dalam {calculateDaysLeft(promo.expiryDate)} hari</span>
+                          <span>Berakhir dalam {calculateDaysLeft(promo.end_date)} hari</span>
                         </div>
-                        <span className="text-primary font-medium">
-                          {promo.promoCode}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-primary border-primary">
+                            {promo.promo_code}
+                          </Badge>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
-                </Link>
-              ))}
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="seasonal">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {promotions.filter(p => p.category === 'Seasonal').map((promo) => (
-                <Card key={promo.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                  {/* Same card content as above */}
-                  <div className="relative h-48">
-                    <img 
-                      src={promo.image} 
-                      alt={promo.title} 
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute top-3 left-3">
-                      <Badge variant="secondary" className="font-medium">
-                        {promo.category}
-                      </Badge>
-                    </div>
-                    <div className="absolute top-3 right-3">
-                      <Badge className="bg-accent text-white font-medium">
-                        {promo.discount}
-                      </Badge>
-                    </div>
-                  </div>
-                  <CardContent className="p-5">
-                    <h3 className="font-semibold text-lg mb-2 line-clamp-2">
-                      {promo.title}
-                    </h3>
-                    <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-                      {promo.description}
-                    </p>
-                    <div className="flex items-center justify-between text-sm">
-                      <div className="flex items-center text-gray-500">
-                        <Calendar className="h-4 w-4 mr-1" />
-                        <span>Berakhir dalam {calculateDaysLeft(promo.expiryDate)} hari</span>
-                      </div>
-                      <span className="text-primary font-medium">
-                        {promo.promoCode}
-                      </span>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
-          
-          {/* Similar content for other tabs */}
-          <TabsContent value="weekend">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {promotions.filter(p => p.category === 'Weekend').map((promo) => (
-                <Card key={promo.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                  {/* Card content */}
-                  <div className="relative h-48">
-                    <img 
-                      src={promo.image} 
-                      alt={promo.title} 
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute top-3 left-3">
-                      <Badge variant="secondary" className="font-medium">
-                        {promo.category}
-                      </Badge>
-                    </div>
-                    <div className="absolute top-3 right-3">
-                      <Badge className="bg-accent text-white font-medium">
-                        {promo.discount}
-                      </Badge>
-                    </div>
-                  </div>
-                  <CardContent className="p-5">
-                    <h3 className="font-semibold text-lg mb-2 line-clamp-2">
-                      {promo.title}
-                    </h3>
-                    <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-                      {promo.description}
-                    </p>
-                    <div className="flex items-center justify-between text-sm">
-                      <div className="flex items-center text-gray-500">
-                        <Calendar className="h-4 w-4 mr-1" />
-                        <span>Berakhir dalam {calculateDaysLeft(promo.expiryDate)} hari</span>
-                      </div>
-                      <span className="text-primary font-medium">
-                        {promo.promoCode}
-                      </span>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="family">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {promotions.filter(p => p.category === 'Family').map((promo) => (
-                <Card key={promo.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                  {/* Card content */}
-                  <div className="relative h-48">
-                    <img 
-                      src={promo.image} 
-                      alt={promo.title} 
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute top-3 left-3">
-                      <Badge variant="secondary" className="font-medium">
-                        {promo.category}
-                      </Badge>
-                    </div>
-                    <div className="absolute top-3 right-3">
-                      <Badge className="bg-accent text-white font-medium">
-                        {promo.discount}
-                      </Badge>
-                    </div>
-                  </div>
-                  <CardContent className="p-5">
-                    <h3 className="font-semibold text-lg mb-2 line-clamp-2">
-                      {promo.title}
-                    </h3>
-                    <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-                      {promo.description}
-                    </p>
-                    <div className="flex items-center justify-between text-sm">
-                      <div className="flex items-center text-gray-500">
-                        <Calendar className="h-4 w-4 mr-1" />
-                        <span>Berakhir dalam {calculateDaysLeft(promo.expiryDate)} hari</span>
-                      </div>
-                      <span className="text-primary font-medium">
-                        {promo.promoCode}
-                      </span>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="flash">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {promotions.filter(p => p.category === 'Flash Sale').map((promo) => (
-                <Card key={promo.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                  {/* Card content */}
-                  <div className="relative h-48">
-                    <img 
-                      src={promo.image} 
-                      alt={promo.title} 
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute top-3 left-3">
-                      <Badge variant="secondary" className="font-medium">
-                        {promo.category}
-                      </Badge>
-                    </div>
-                    <div className="absolute top-3 right-3">
-                      <Badge className="bg-accent text-white font-medium">
-                        {promo.discount}
-                      </Badge>
-                    </div>
-                  </div>
-                  <CardContent className="p-5">
-                    <h3 className="font-semibold text-lg mb-2 line-clamp-2">
-                      {promo.title}
-                    </h3>
-                    <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-                      {promo.description}
-                    </p>
-                    <div className="flex items-center justify-between text-sm">
-                      <div className="flex items-center text-gray-500">
-                        <Calendar className="h-4 w-4 mr-1" />
-                        <span>Berakhir dalam {calculateDaysLeft(promo.expiryDate)} hari</span>
-                      </div>
-                      <span className="text-primary font-medium">
-                        {promo.promoCode}
-                      </span>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
+                ))}
+              </div>
+              {filterPromotionsByCategory(category).length === 0 && (
+                <div className="text-center py-12">
+                  <Gift className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-muted-foreground mb-2">
+                    Belum Ada Promo
+                  </h3>
+                  <p className="text-muted-foreground">
+                    Promo untuk kategori ini belum tersedia. Cek kembali nanti!
+                  </p>
+                </div>
+              )}
+            </TabsContent>
+          ))}
         </Tabs>
       </div>
       

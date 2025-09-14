@@ -23,6 +23,8 @@ import AdminDashboard from './pages/admin/Dashboard';
 import DestinationsList from './pages/admin/Destinations';
 import DestinationForm from './pages/admin/DestinationForm';
 import AdminTransactions from './pages/admin/Transactions';
+import Promotions from './pages/Promotions';
+import Help from './pages/Help';
 
 function App() {
   return (
@@ -37,6 +39,9 @@ function App() {
           <Route path="dashboard" element={<CustomerDashboard />} />
           <Route path="destinasi" element={<Destinations />} />
           <Route path="destinasi/:id" element={<DestinationDetail />} />
+          <Route path="promo" element={<Promotions />} />
+          <Route path="bantuan" element={<Help />} />
+          <Route path="help" element={<Help />} />
           <Route path="payment-success" element={<PaymentSuccess />} />
           <Route path="payment-cancel" element={<PaymentCancel />} />
           <Route path="bookings" element={<Bookings />} />

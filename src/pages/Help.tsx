@@ -1,12 +1,14 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
 import {
   Search,
   HelpCircle,
@@ -14,195 +16,146 @@ import {
   Phone,
   Mail,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  User,
+  Ticket,
+  CreditCard,
+  QrCode,
+  ArrowLeft,
+  Clock,
+  CheckCircle,
+  ExternalLink
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
-const faqCategories = [
-  { id: 'account', name: 'Akun dan Profil', icon: HelpCircle },
-  { id: 'booking', name: 'Pemesanan Tiket', icon: HelpCircle },
-  { id: 'payment', name: 'Pembayaran', icon: HelpCircle },
-  { id: 'ticket', name: 'E-Tiket', icon: HelpCircle },
-  { id: 'refund', name: 'Pembatalan & Refund', icon: HelpCircle },
-  { id: 'site', name: 'Penggunaan Website', icon: HelpCircle },
-];
+interface HelpCategory {
+  id: string;
+  name: string;
+  icon: string;
+  display_order: number;
+}
 
-const faqs = [
-  {
-    category: 'account',
-    items: [
-      {
-        question: 'Bagaimana cara mendaftar akun di WisataJelajah?',
-        answer: 'Untuk mendaftar, klik tombol "Daftar" di pojok kanan atas halaman. Isi formulir pendaftaran dengan nama, email, dan password Anda. Kemudian ikuti instruksi verifikasi email yang dikirimkan ke alamat email Anda.'
-      },
-      {
-        question: 'Bagaimana cara mengubah password saya?',
-        answer: 'Masuk ke akun Anda, klik profil di pojok kanan atas, pilih "Pengaturan Akun", kemudian pilih tab "Keamanan". Di sana Anda dapat mengubah password dengan memasukkan password lama dan password baru Anda.'
-      },
-      {
-        question: 'Apakah saya bisa mengubah alamat email terdaftar?',
-        answer: 'Ya, Anda dapat mengubah alamat email terdaftar melalui halaman Pengaturan Akun. Namun, Anda perlu memverifikasi alamat email baru sebelum perubahan diterapkan sepenuhnya.'
-      },
-      {
-        question: 'Bagaimana cara menghapus akun saya?',
-        answer: 'Untuk menghapus akun, silakan masuk ke Pengaturan Akun dan gulir ke bawah hingga menemukan opsi "Hapus Akun". Harap dicatat bahwa penghapusan akun bersifat permanen dan semua data terkait tidak dapat dipulihkan.'
-      }
-    ]
-  },
-  {
-    category: 'booking',
-    items: [
-      {
-        question: 'Bagaimana cara memesan tiket wisata?',
-        answer: 'Pilih destinasi wisata yang ingin Anda kunjungi, pilih tanggal kunjungan dan jumlah tiket, kemudian klik "Beli Tiket". Ikuti langkah selanjutnya untuk menyelesaikan pembayaran dan menerima e-tiket.'
-      },
-      {
-        question: 'Apakah saya bisa mengubah tanggal kunjungan setelah memesan?',
-        answer: 'Ya, untuk sebagian besar tiket, Anda dapat mengubah tanggal kunjungan melalui halaman "Pesanan Saya". Namun, beberapa destinasi memiliki kebijakan tersendiri dan mungkin mengenakan biaya perubahan.'
-      },
-      {
-        question: 'Berapa lama proses konfirmasi pesanan?',
-        answer: 'Konfirmasi pesanan biasanya diterima secara instan setelah pembayaran berhasil. E-tiket akan dikirimkan ke email Anda dan juga tersimpan di akun WisataJelajah Anda.'
-      },
-      {
-        question: 'Apakah saya perlu mencetak tiket?',
-        answer: 'Sebagian besar destinasi menerima e-tiket digital yang dapat ditunjukkan melalui smartphone Anda. Namun, beberapa destinasi mungkin memerlukan tiket cetak. Informasi ini akan tercantum dalam detail e-tiket Anda.'
-      }
-    ]
-  },
-  {
-    category: 'payment',
-    items: [
-      {
-        question: 'Apa saja metode pembayaran yang tersedia?',
-        answer: 'Kami menerima berbagai metode pembayaran termasuk kartu kredit/debit, transfer bank, e-wallet (GoPay, OVO, DANA, LinkAja), dan virtual account dari berbagai bank.'
-      },
-      {
-        question: 'Berapa lama batas waktu pembayaran?',
-        answer: 'Batas waktu pembayaran adalah 1 jam untuk metode pembayaran virtual account dan 15 menit untuk metode pembayaran lainnya. Jika tidak dibayar dalam tenggat waktu tersebut, pesanan akan otomatis dibatalkan.'
-      },
-      {
-        question: 'Mengapa pembayaran saya gagal?',
-        answer: 'Pembayaran dapat gagal karena berbagai alasan seperti saldo tidak mencukupi, masalah pada gateway pembayaran, atau kendala teknis lainnya. Periksa metode pembayaran Anda dan coba lagi, atau gunakan metode pembayaran alternatif.'
-      },
-      {
-        question: 'Apakah ada biaya tambahan saat pembayaran?',
-        answer: 'Beberapa metode pembayaran mungkin mengenakan biaya layanan tambahan. Informasi biaya tambahan ini akan ditampilkan sebelum Anda menyelesaikan pembayaran.'
-      }
-    ]
-  },
-  {
-    category: 'ticket',
-    items: [
-      {
-        question: 'Bagaimana cara menggunakan e-tiket?',
-        answer: 'Tunjukkan e-tiket dari smartphone Anda atau cetak e-tiket dan bawa ke lokasi wisata. Petugas akan melakukan pemindaian QR code pada tiket Anda untuk validasi.'
-      },
-      {
-        question: 'Bagaimana jika saya kehilangan e-tiket?',
-        answer: 'Anda dapat mengakses kembali e-tiket melalui akun WisataJelajah Anda di menu "Pesanan Saya", atau melalui email konfirmasi yang dikirimkan setelah pembayaran berhasil.'
-      },
-      {
-        question: 'Apakah e-tiket dapat digunakan untuk beberapa orang?',
-        answer: 'Setiap e-tiket hanya berlaku untuk satu orang. Jika Anda membeli beberapa tiket, setiap orang harus memiliki tiket sendiri dengan QR code yang unik.'
-      },
-      {
-        question: 'Apakah ada batas waktu penggunaan e-tiket?',
-        answer: 'Ya, e-tiket hanya berlaku pada tanggal kunjungan yang telah Anda pilih saat pemesanan. Beberapa destinasi mungkin memiliki batasan jam operasional tertentu.'
-      }
-    ]
-  },
-  {
-    category: 'refund',
-    items: [
-      {
-        question: 'Bagaimana kebijakan pembatalan dan refund?',
-        answer: 'Kebijakan pembatalan bervariasi tergantung destinasi. Secara umum, pembatalan minimal 3 hari sebelum tanggal kunjungan mendapatkan refund sebesar 75%, 1-2 hari sebelumnya mendapat refund 50%, dan pembatalan pada hari-H tidak mendapatkan refund.'
-      },
-      {
-        question: 'Bagaimana cara mengajukan pembatalan dan refund?',
-        answer: 'Masuk ke akun Anda, pilih menu "Pesanan Saya", pilih pesanan yang ingin dibatalkan, kemudian klik tombol "Batalkan Pesanan". Ikuti instruksi selanjutnya untuk mengajukan refund.'
-      },
-      {
-        question: 'Berapa lama proses refund diproses?',
-        answer: 'Proses refund membutuhkan waktu 7-14 hari kerja tergantung metode pembayaran yang Anda gunakan. Refund akan dikembalikan ke metode pembayaran asli yang digunakan saat pemesanan.'
-      },
-      {
-        question: 'Apakah pembatalan karena cuaca buruk bisa mendapatkan refund penuh?',
-        answer: 'Untuk pembatalan yang disebabkan oleh penutupan destinasi karena cuaca buruk atau alasan keamanan lainnya, Anda berhak mendapatkan refund penuh atau opsi reschedule tanpa biaya tambahan.'
-      }
-    ]
-  },
-  {
-    category: 'site',
-    items: [
-      {
-        question: 'Bagaimana cara mencari destinasi wisata?',
-        answer: 'Anda dapat menggunakan fitur pencarian di halaman utama atau menjelajahi destinasi berdasarkan kategori, lokasi, atau rekomendasi yang ditampilkan di halaman beranda.'
-      },
-      {
-        question: 'Apakah WisataJelajah memiliki aplikasi mobile?',
-        answer: 'Ya, WisataJelajah tersedia dalam versi aplikasi mobile untuk Android dan iOS. Anda dapat mengunduhnya melalui Google Play Store atau Apple App Store.'
-      },
-      {
-        question: 'Bagaimana cara menyimpan destinasi favorit?',
-        answer: 'Untuk menyimpan destinasi favorit, klik ikon hati pada halaman detail destinasi. Destinasi yang disimpan dapat dilihat di menu "Favorit" pada profil Anda.'
-      },
-      {
-        question: 'Apakah saya perlu login untuk memesan tiket?',
-        answer: 'Ya, Anda perlu login atau mendaftar sebelum melakukan pemesanan tiket untuk memastikan e-tiket tersimpan di akun Anda dan dapat diakses kapan saja.'
-      }
-    ]
-  }
-];
+interface HelpArticle {
+  id: string;
+  category_id: string;
+  question: string;
+  answer: string;
+  display_order: number;
+  is_featured: boolean;
+}
 
-const FAQ = ({ category }: { category: string }) => {
+const getIconComponent = (iconName: string) => {
+  const icons: { [key: string]: any } = {
+    'user': User,
+    'ticket': Ticket,
+    'credit-card': CreditCard,
+    'qr-code': QrCode,
+    'arrow-left': ArrowLeft,
+    'help-circle': HelpCircle
+  };
+  return icons[iconName] || HelpCircle;
+};
+
+
+const FAQ = ({ articles }: { articles: HelpArticle[] }) => {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   
   const toggleFAQ = (index: number) => {
     setOpenIndex(openIndex === index ? null : index);
   };
   
-  const categoryFaqs = faqs.find(faq => faq.category === category)?.items || [];
-  
   return (
     <div className="space-y-4">
-      {categoryFaqs.map((faq, index) => (
+      {articles.map((article, index) => (
         <div 
-          key={index} 
-          className="border rounded-lg overflow-hidden"
+          key={article.id} 
+          className="border rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
         >
           <button
-            className="w-full px-6 py-4 flex items-center justify-between text-left font-medium hover:bg-gray-50 transition-colors"
+            className="w-full px-6 py-4 flex items-center justify-between text-left font-medium hover:bg-muted/50 transition-colors"
             onClick={() => toggleFAQ(index)}
           >
-            <span>{faq.question}</span>
+            <div className="flex items-center gap-3">
+              {article.is_featured && (
+                <Badge className="bg-accent text-white">Popular</Badge>
+              )}
+              <span className="text-lg">{article.question}</span>
+            </div>
             {openIndex === index ? 
-              <ChevronUp className="h-5 w-5 text-gray-500" /> : 
-              <ChevronDown className="h-5 w-5 text-gray-500" />
+              <ChevronUp className="h-5 w-5 text-muted-foreground" /> : 
+              <ChevronDown className="h-5 w-5 text-muted-foreground" />
             }
           </button>
           
           {openIndex === index && (
-            <div className="px-6 py-4 bg-gray-50 border-t">
-              <p className="text-gray-600">{faq.answer}</p>
+            <div className="px-6 py-4 bg-muted/30 border-t">
+              <p className="text-muted-foreground leading-relaxed">{article.answer}</p>
             </div>
           )}
         </div>
       ))}
+      {articles.length === 0 && (
+        <div className="text-center py-8">
+          <HelpCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <p className="text-muted-foreground">Belum ada artikel untuk kategori ini.</p>
+        </div>
+      )}
     </div>
   );
 };
 
 const Help = () => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [categories, setCategories] = useState<HelpCategory[]>([]);
+  const [articles, setArticles] = useState<HelpArticle[]>([]);
+  const [loading, setLoading] = useState(true);
   const [contactForm, setContactForm] = useState({
     name: '',
     email: '',
     subject: '',
     message: ''
   });
+  const [submitting, setSubmitting] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    fetchHelpData();
+  }, []);
+
+  const fetchHelpData = async () => {
+    try {
+      const [categoriesResponse, articlesResponse] = await Promise.all([
+        supabase
+          .from('help_categories')
+          .select('*')
+          .order('display_order'),
+        supabase
+          .from('help_articles')
+          .select('*')
+          .order('display_order')
+      ]);
+
+      if (categoriesResponse.error) throw categoriesResponse.error;
+      if (articlesResponse.error) throw articlesResponse.error;
+
+      setCategories(categoriesResponse.data || []);
+      setArticles(articlesResponse.data || []);
+    } catch (error) {
+      console.error('Error fetching help data:', error);
+      toast({
+        title: "Error",
+        description: "Gagal memuat data bantuan. Silakan coba lagi.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getArticlesByCategory = (categoryId: string) => {
+    return articles.filter(article => article.category_id === categoryId);
+  };
   
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -210,23 +163,35 @@ const Help = () => {
     // Implement search functionality here
   };
   
-  const handleContactSubmit = (e: React.FormEvent) => {
+  const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Contact form submitted:', contactForm);
+    setSubmitting(true);
     
-    // In a real app, send this data to your backend
-    toast({
-      title: "Pesan terkirim!",
-      description: "Tim kami akan menghubungi Anda segera."
-    });
-    
-    // Reset form
-    setContactForm({
-      name: '',
-      email: '',
-      subject: '',
-      message: ''
-    });
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      toast({
+        title: "Pesan terkirim!",
+        description: "Tim kami akan menghubungi Anda dalam 24 jam.",
+      });
+      
+      // Reset form
+      setContactForm({
+        name: '',
+        email: '',
+        subject: '',
+        message: ''
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Gagal mengirim pesan. Silakan coba lagi.",
+        variant: "destructive"
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -236,124 +201,228 @@ const Help = () => {
       [name]: value
     }));
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <div className="bg-gradient-to-br from-primary via-primary/90 to-secondary text-white py-16">
+          <div className="container-custom text-center">
+            <Skeleton className="h-8 w-64 mx-auto mb-6 bg-white/20" />
+            <Skeleton className="h-6 w-96 mx-auto mb-8 bg-white/20" />
+            <Skeleton className="h-12 w-full max-w-xl mx-auto bg-white/20" />
+          </div>
+        </div>
+        <div className="container-custom py-12">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[...Array(6)].map((_, i) => (
+              <Card key={i}>
+                <CardContent className="p-6">
+                  <Skeleton className="h-6 w-full mb-2" />
+                  <Skeleton className="h-4 w-full mb-4" />
+                  <Skeleton className="h-8 w-24" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
   
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
       
       {/* Hero Section */}
-      <div className="bg-gradient-to-r from-primary to-blue-700 text-white py-16">
-        <div className="container-custom text-center">
-          <h1 className="text-3xl md:text-4xl font-bold mb-6">Pusat Bantuan</h1>
-          <p className="text-lg text-blue-100 max-w-2xl mx-auto mb-8">
+      <div className="bg-gradient-to-br from-primary via-primary/90 to-secondary text-white py-20 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-black/10 to-transparent"></div>
+        <div className="container-custom text-center relative z-10">
+          <div className="flex items-center justify-center gap-3 mb-6">
+            <div className="bg-accent/20 p-3 rounded-full">
+              <HelpCircle className="h-8 w-8 text-accent" />
+            </div>
+            <div>
+              <Badge className="bg-accent text-white mb-2">24/7 Support</Badge>
+              <h1 className="text-4xl md:text-6xl font-bold">
+                Pusat <span className="text-accent">Bantuan</span>
+              </h1>
+            </div>
+          </div>
+          <p className="text-lg text-white/90 max-w-2xl mx-auto mb-8 leading-relaxed">
             Temukan jawaban untuk pertanyaan Anda atau hubungi kami untuk bantuan lebih lanjut
           </p>
           
-          <form onSubmit={handleSearchSubmit} className="max-w-xl mx-auto relative">
-            <Input
-              type="text"
-              placeholder="Cari pertanyaan atau topik..."
-              className="pl-12 h-12 text-black"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-            <Button type="submit" className="absolute right-1 top-1">
-              Cari
-            </Button>
+          <form onSubmit={handleSearchSubmit} className="max-w-2xl mx-auto relative">
+            <div className="relative">
+              <Input
+                type="text"
+                placeholder="Cari pertanyaan, topik, atau kata kunci..."
+                className="pl-12 h-14 text-lg text-black border-0 shadow-lg rounded-xl"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" />
+              <Button 
+                type="submit" 
+                className="absolute right-2 top-2 bg-accent hover:bg-accent/90 text-white rounded-lg h-10 px-6"
+              >
+                <Search className="h-4 w-4 mr-2" />
+                Cari
+              </Button>
+            </div>
           </form>
         </div>
       </div>
       
       <div className="container-custom py-12">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Quick Links */}
-          <div className="md:col-span-3">
-            <h2 className="text-2xl font-semibold mb-6">Bantuan Cepat</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-start">
-                    <div className="bg-primary/10 p-3 rounded-full mr-4">
-                      <MessageCircle className="h-6 w-6 text-primary" />
+          <div className="lg:col-span-4">
+            <div className="text-center mb-8">
+              <h2 className="text-3xl font-bold mb-3">Bantuan Cepat</h2>
+              <p className="text-muted-foreground text-lg">Pilih cara yang paling mudah untuk mendapatkan bantuan</p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+              <Card className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg hover:scale-105">
+                <CardHeader>
+                  <div className="flex items-center gap-4">
+                    <div className="bg-gradient-to-br from-primary to-primary/80 p-4 rounded-xl text-white group-hover:scale-110 transition-transform">
+                      <MessageCircle className="h-6 w-6" />
                     </div>
                     <div>
-                      <h3 className="font-semibold mb-2">Chat Bantuan</h3>
-                      <p className="text-sm text-gray-500 mb-4">Chat langsung dengan tim layanan pelanggan kami</p>
-                      <Button variant="outline" size="sm">Mulai Chat</Button>
+                      <CardTitle className="text-lg">Chat Bantuan</CardTitle>
+                      <div className="flex items-center gap-2 mt-1">
+                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                        <span className="text-sm text-green-600 font-medium">Online</span>
+                      </div>
                     </div>
                   </div>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <p className="text-muted-foreground mb-4">Chat langsung dengan tim layanan pelanggan kami yang siap membantu 24/7</p>
+                  <Button className="w-full bg-primary hover:bg-primary/90 text-white">
+                    <MessageCircle className="h-4 w-4 mr-2" />
+                    Mulai Chat
+                  </Button>
                 </CardContent>
               </Card>
               
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-start">
-                    <div className="bg-primary/10 p-3 rounded-full mr-4">
-                      <Phone className="h-6 w-6 text-primary" />
+              <Card className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg hover:scale-105">
+                <CardHeader>
+                  <div className="flex items-center gap-4">
+                    <div className="bg-gradient-to-br from-secondary to-secondary/80 p-4 rounded-xl text-white group-hover:scale-110 transition-transform">
+                      <Phone className="h-6 w-6" />
                     </div>
                     <div>
-                      <h3 className="font-semibold mb-2">Call Center</h3>
-                      <p className="text-sm text-gray-500 mb-4">Hubungi kami di jam kerja (08:00 - 20:00)</p>
-                      <Button variant="outline" size="sm">0800-1234-5678</Button>
+                      <CardTitle className="text-lg">Call Center</CardTitle>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Clock className="w-3 h-3 text-muted-foreground" />
+                        <span className="text-sm text-muted-foreground">08:00 - 20:00 WIB</span>
+                      </div>
                     </div>
                   </div>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <p className="text-muted-foreground mb-4">Hubungi langsung tim customer service untuk bantuan langsung</p>
+                  <Button variant="outline" className="w-full hover:bg-secondary hover:text-white border-secondary">
+                    <Phone className="h-4 w-4 mr-2" />
+                    0800-1234-5678
+                  </Button>
                 </CardContent>
               </Card>
               
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-start">
-                    <div className="bg-primary/10 p-3 rounded-full mr-4">
-                      <Mail className="h-6 w-6 text-primary" />
+              <Card className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg hover:scale-105">
+                <CardHeader>
+                  <div className="flex items-center gap-4">
+                    <div className="bg-gradient-to-br from-accent to-accent/80 p-4 rounded-xl text-white group-hover:scale-110 transition-transform">
+                      <Mail className="h-6 w-6" />
                     </div>
                     <div>
-                      <h3 className="font-semibold mb-2">Email</h3>
-                      <p className="text-sm text-gray-500 mb-4">Kirim pesan dan dapatkan balasan dalam 24 jam</p>
-                      <Button variant="outline" size="sm">help@wisatajelajah.id</Button>
+                      <CardTitle className="text-lg">Email Support</CardTitle>
+                      <div className="flex items-center gap-2 mt-1">
+                        <CheckCircle className="w-3 h-3 text-muted-foreground" />
+                        <span className="text-sm text-muted-foreground">Respon 24 jam</span>
+                      </div>
                     </div>
                   </div>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <p className="text-muted-foreground mb-4">Kirim detail pertanyaan Anda melalui email untuk bantuan komprehensif</p>
+                  <Button variant="outline" className="w-full hover:bg-accent hover:text-white border-accent">
+                    <Mail className="h-4 w-4 mr-2" />
+                    help@wisatajelajah.id
+                    <ExternalLink className="h-3 w-3 ml-1" />
+                  </Button>
                 </CardContent>
               </Card>
             </div>
           </div>
           
           {/* FAQs */}
-          <div className="md:col-span-2">
-            <h2 className="text-2xl font-semibold mb-6">Pertanyaan Umum</h2>
+          <div className="lg:col-span-3">
+            <div className="mb-8">
+              <h2 className="text-3xl font-bold mb-3">Pertanyaan yang Sering Diajukan</h2>
+              <p className="text-muted-foreground text-lg">Temukan jawaban untuk pertanyaan umum tentang layanan kami</p>
+            </div>
             
-            <Tabs defaultValue="account" className="w-full">
-              <TabsList className="mb-6 flex flex-wrap">
-                {faqCategories.map(category => (
-                  <TabsTrigger key={category.id} value={category.id} className="mb-2">
-                    {category.name}
-                  </TabsTrigger>
+            {categories.length > 0 ? (
+              <Tabs defaultValue={categories[0]?.id} className="w-full">
+                <TabsList className="mb-8 bg-muted/50 p-1 rounded-xl grid-cols-3 lg:grid-cols-6">
+                  {categories.map(category => {
+                    const IconComponent = getIconComponent(category.icon);
+                    return (
+                      <TabsTrigger 
+                        key={category.id} 
+                        value={category.id} 
+                        className="rounded-lg font-medium flex items-center gap-2 text-sm"
+                      >
+                        <IconComponent className="h-4 w-4" />
+                        <span className="hidden sm:inline">{category.name}</span>
+                      </TabsTrigger>
+                    );
+                  })}
+                </TabsList>
+                
+                {categories.map(category => (
+                  <TabsContent key={category.id} value={category.id}>
+                    <FAQ articles={getArticlesByCategory(category.id)} />
+                  </TabsContent>
                 ))}
-              </TabsList>
-              
-              {faqCategories.map(category => (
-                <TabsContent key={category.id} value={category.id}>
-                  <FAQ category={category.id} />
-                </TabsContent>
-              ))}
-            </Tabs>
+              </Tabs>
+            ) : (
+              <div className="text-center py-12">
+                <HelpCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground">Sedang memuat data bantuan...</p>
+              </div>
+            )}
           </div>
           
           {/* Contact Form */}
-          <div>
-            <Card>
+          <div className="lg:col-span-1">
+            <Card className="sticky top-8 shadow-xl border-0">
+              <CardHeader className="bg-gradient-to-r from-primary to-secondary text-white rounded-t-lg">
+                <CardTitle className="text-xl flex items-center gap-2">
+                  <Mail className="h-5 w-5" />
+                  Hubungi Kami
+                </CardTitle>
+                <p className="text-white/90 text-sm">
+                  Tidak menemukan jawaban? Kirim pesan kepada kami
+                </p>
+              </CardHeader>
               <CardContent className="p-6">
-                <h2 className="text-2xl font-semibold mb-6">Hubungi Kami</h2>
                 <form onSubmit={handleContactSubmit} className="space-y-4">
                   <div className="space-y-2">
-                    <label htmlFor="name" className="text-sm font-medium">Nama</label>
+                    <label htmlFor="name" className="text-sm font-medium">Nama Lengkap</label>
                     <Input
                       id="name"
                       name="name"
-                      placeholder="Nama lengkap Anda"
+                      placeholder="Masukkan nama lengkap"
                       value={contactForm.name}
                       onChange={handleInputChange}
                       required
+                      className="rounded-lg"
                     />
                   </div>
                   
@@ -363,24 +432,25 @@ const Help = () => {
                       id="email"
                       name="email"
                       type="email"
-                      placeholder="email@example.com"
+                      placeholder="nama@email.com"
                       value={contactForm.email}
                       onChange={handleInputChange}
                       required
+                      className="rounded-lg"
                     />
                   </div>
                   
                   <div className="space-y-2">
-                    <label htmlFor="subject" className="text-sm font-medium">Perihal</label>
+                    <label htmlFor="subject" className="text-sm font-medium">Kategori Pertanyaan</label>
                     <select
                       id="subject"
                       name="subject"
-                      className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+                      className="w-full h-10 rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                       value={contactForm.subject}
                       onChange={handleInputChange}
                       required
                     >
-                      <option value="" disabled>Pilih perihal</option>
+                      <option value="" disabled>Pilih kategori</option>
                       <option value="general">Pertanyaan Umum</option>
                       <option value="booking">Masalah Pemesanan</option>
                       <option value="payment">Masalah Pembayaran</option>
@@ -395,16 +465,31 @@ const Help = () => {
                     <Textarea
                       id="message"
                       name="message"
-                      placeholder="Tulis pesan Anda di sini..."
-                      rows={5}
+                      placeholder="Jelaskan pertanyaan atau masalah Anda dengan detail..."
+                      rows={4}
                       value={contactForm.message}
                       onChange={handleInputChange}
                       required
+                      className="rounded-lg resize-none"
                     />
                   </div>
                   
-                  <Button type="submit" className="w-full">
-                    Kirim Pesan
+                  <Button 
+                    type="submit" 
+                    className="w-full bg-primary hover:bg-primary/90 text-white rounded-lg h-11"
+                    disabled={submitting}
+                  >
+                    {submitting ? (
+                      <>
+                        <Clock className="h-4 w-4 mr-2 animate-spin" />
+                        Mengirim...
+                      </>
+                    ) : (
+                      <>
+                        <Mail className="h-4 w-4 mr-2" />
+                        Kirim Pesan
+                      </>
+                    )}
                   </Button>
                 </form>
               </CardContent>
