@@ -13,10 +13,10 @@ export type AuthFormData = {
 
 export const signUp = async (data: AuthFormData): Promise<{ user: User | null; error: AuthError | null; session: Session | null }> => {
   try {
-    const { email, password, fullName, phone, address } = data;
+    const { email, password, fullName } = data;
     
     console.log('Starting registration process...');
-    console.log('Registration data:', { email, fullName, phone, address });
+    console.log('Registration data:', { email, fullName });
     
     // Create auth user with Supabase
     const { data: authData, error } = await supabase.auth.signUp({
@@ -24,9 +24,7 @@ export const signUp = async (data: AuthFormData): Promise<{ user: User | null; e
       password,
       options: {
         data: {
-          full_name: fullName,
-          phone_number: phone,
-          alamat: address
+          full_name: fullName
         }
       }
     });
@@ -58,9 +56,7 @@ export const signUp = async (data: AuthFormData): Promise<{ user: User | null; e
         
         // As a fallback, manually try to create the profile
         await createUserProfile(authData.user.id, {
-          full_name: fullName || '',
-          phone_number: phone,
-          alamat: address
+          full_name: fullName || ''
         });
       } else {
         console.log('Profile automatically created:', profileData);

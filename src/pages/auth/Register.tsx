@@ -5,7 +5,7 @@ import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-import { Eye, EyeOff, Mail, Lock, Phone, User, Upload } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, Upload } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { signUp, uploadProfileImage, updateProfile, createUserProfile } from '@/integrations/supabase/auth';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -18,8 +18,6 @@ const Register = () => {
     email: '',
     password: '',
     confirmPassword: '',
-    phone: '',
-    address: '',
     agreeTerms: false
   });
   const [showPassword, setShowPassword] = useState(false);
@@ -123,13 +121,6 @@ const Register = () => {
       newErrors.confirmPassword = 'Konfirmasi password tidak cocok';
     }
     
-    // Validate phone
-    if (!formData.phone) {
-      newErrors.phone = 'Nomor telepon wajib diisi';
-    } else if (!/^[0-9+\-\s]{10,15}$/.test(formData.phone)) {
-      newErrors.phone = 'Nomor telepon tidak valid';
-    }
-    
     // Validate terms agreement
     if (!formData.agreeTerms) {
       newErrors.agreeTerms = 'Anda harus menyetujui syarat dan ketentuan';
@@ -152,9 +143,7 @@ const Register = () => {
     try {
       console.log('Starting registration with data:', {
         email: formData.email,
-        fullName: formData.fullName,
-        phone: formData.phone,
-        address: formData.address
+        fullName: formData.fullName
       });
       
       // Test Supabase connection first
@@ -176,9 +165,7 @@ const Register = () => {
       const { user, error, session } = await signUp({
         email: formData.email,
         password: formData.password,
-        fullName: formData.fullName,
-        phone: formData.phone,
-        address: formData.address
+        fullName: formData.fullName
       });
       
       if (error) {
@@ -217,9 +204,7 @@ const Register = () => {
         if (!profileCheck) {
           // Manually create profile if trigger didn't work
           const manualProfileResult = await createUserProfile(user.id, {
-            full_name: formData.fullName,
-            phone_number: formData.phone,
-            alamat: formData.address
+            full_name: formData.fullName
           });
           
           if (manualProfileResult.error) {
@@ -465,45 +450,6 @@ const Register = () => {
                   {errors.confirmPassword && (
                     <p className="text-xs text-red-500">{errors.confirmPassword}</p>
                   )}
-                </div>
-                
-                {/* Phone */}
-                <div className="space-y-2">
-                  <label htmlFor="phone" className="text-sm font-medium">
-                    Nomor Telepon
-                    <span className="text-red-500"> *</span>
-                  </label>
-                  <div className="relative">
-                    <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-4 w-4" />
-                    <Input
-                      id="phone"
-                      name="phone"
-                      type="tel"
-                      placeholder="+62 812 3456 7890"
-                      className="pl-10"
-                      value={formData.phone}
-                      onChange={handleChange}
-                      required
-                    />
-                  </div>
-                  {errors.phone && (
-                    <p className="text-xs text-red-500">{errors.phone}</p>
-                  )}
-                </div>
-                
-                {/* Address */}
-                <div className="space-y-2">
-                  <label htmlFor="address" className="text-sm font-medium">
-                    Alamat <span className="text-xs text-gray-500">(opsional)</span>
-                  </label>
-                  <textarea
-                    id="address"
-                    name="address"
-                    placeholder="Masukkan alamat Anda"
-                    className="w-full min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                    value={formData.address}
-                    onChange={handleChange}
-                  ></textarea>
                 </div>
                 
                 {/* Terms and Conditions */}
