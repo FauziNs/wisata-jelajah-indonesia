@@ -243,17 +243,11 @@ const Register = () => {
       // Show success message
       toast({
         title: "Registrasi berhasil!",
-        description: session 
-          ? "Akun Anda telah dibuat dan Anda telah masuk."
-          : "Silakan periksa email Anda untuk verifikasi akun."
+        description: "Silakan masuk dengan akun yang baru Anda buat."
       });
       
-      // Navigate to login page or home page based on session status
-      if (session) {
-        navigate('/'); // User is already logged in
-      } else {
-        navigate('/login'); // User needs to verify email or log in
-      }
+      // Always redirect to login page after registration
+      navigate('/login');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       console.error('Registration error:', error);
